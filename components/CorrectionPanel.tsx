@@ -26,14 +26,17 @@ interface CorrectionPanelProps {
   controleContent: string
   notation: string
   niveau: string
+  duree?: string
   onClose: () => void
+  onSaved?: () => void
 }
 
-export default function CorrectionPanel({ controleContent, notation, niveau, onClose }: CorrectionPanelProps) {
+export default function CorrectionPanel({ controleContent, notation, niveau, duree, onClose, onSaved }: CorrectionPanelProps) {
   const [preview, setPreview] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [correcting, setCorrecting] = useState(false)
   const [result, setResult] = useState<CorrectionResult | null>(null)
+  const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -68,6 +71,20 @@ export default function CorrectionPanel({ controleContent, notation, niveau, onC
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setResult(data.correction)
+
+      // Auto-save in background
+      fetch('/api/save-controle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          controleContent,
+          correction: data.correction,
+          notation,
+          duree,
+        }),
+      }).then((r) => {
+        if (r.ok) { setSaved(true); onSaved?.() }
+      }).catch(() => {})
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur inconnue')
     } finally {
@@ -145,6 +162,11 @@ export default function CorrectionPanel({ controleContent, notation, niveau, onC
         <div className="space-y-4">
           {/* Note globale */}
           <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 border border-indigo-100 text-center">
+            {saved && (
+              <div className="inline-flex items-center gap-1.5 text-xs text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full mb-3">
+                <span>✓</span> Sauvegardé dans tes résultats
+              </div>
+            )}
             <div className="text-5xl font-bold text-indigo-700 mb-1">{result.note_finale}</div>
             <div className="text-slate-600 text-sm mt-2 max-w-sm mx-auto">{result.appreciation}</div>
             {totalMax > 0 && (

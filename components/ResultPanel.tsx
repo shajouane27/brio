@@ -32,6 +32,7 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
       <CorrectionPanel
         controleContent={content}
         notation={controleOptions.notation}
+        duree={controleOptions.duree}
         niveau={niveau}
         onClose={() => setShowCorrection(false)}
       />
