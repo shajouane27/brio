@@ -4,4 +4,4 @@
 // Surchargeable via la variable d'environnement ANTHROPIC_MODEL sur Vercel,
 // sans redéploiement de code.
 export const CLAUDE_MODEL =
-  process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022'
+  process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6'
