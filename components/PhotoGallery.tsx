@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import {
   DndContext,
   closestCenter,
@@ -59,12 +58,11 @@ function SortablePhoto({ photo, index, onRemove, disabled }: {
         className={`absolute inset-0 cursor-grab active:cursor-grabbing z-10 ${disabled ? 'pointer-events-none' : ''}`}
       />
 
-      <Image
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
         src={photo.preview}
         alt={`Page ${index + 1}`}
-        fill
-        className="object-cover"
-        sizes="120px"
+        className="absolute inset-0 w-full h-full object-cover"
       />
 
       {/* Page number badge */}
