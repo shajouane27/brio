@@ -23,16 +23,47 @@ function isHeic(file: File): boolean {
   return name.endsWith('.heic') || name.endsWith('.heif')
 }
 
-// Convertit un fichier HEIC en JPEG (browser only, import dynamique)
-async function convertHeicToJpeg(file: File): Promise<File> {
-  const heic2any = (await import('heic2any')).default
-  const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
-  const jpegBlob = Array.isArray(blob) ? blob[0] : blob
-  return new File(
-    [jpegBlob],
-    file.name.replace(/\.(heic|heif)$/i, '.jpg'),
-    { type: 'image/jpeg' }
-  )
+/**
+ * Convertit HEIC → JPEG via Canvas (sans librairie externe, sans Worker).
+ * iOS Safari affiche nativement HEIC dans <img>, donc on peut passer par
+ * img → canvas → toBlob pour obtenir un JPEG compatible Anthropic.
+ * Sur les autres navigateurs qui ne savent pas afficher HEIC, img.onerror
+ * est déclenché et on rejette la promesse → appelant garde l'original.
+ */
+function heicToJpegViaCanvas(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) { reject(new Error('canvas ctx unavailable')); return }
+      ctx.drawImage(img, 0, 0)
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error('toBlob failed')); return }
+          resolve(new File(
+            [blob],
+            file.name.replace(/\.(heic|heif)$/i, '.jpg'),
+            { type: 'image/jpeg' }
+          ))
+        },
+        'image/jpeg',
+        0.85
+      )
+    }
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('image load failed'))
+    }
+
+    img.src = url
+  })
 }
 
 // Prépare un fichier : conversion HEIC si nécessaire + création de la preview
@@ -40,9 +71,10 @@ async function prepareFile(file: File): Promise<PhotoItem> {
   let processedFile = file
   if (isHeic(file)) {
     try {
-      processedFile = await convertHeicToJpeg(file)
+      processedFile = await heicToJpegViaCanvas(file)
     } catch {
-      // Si la conversion échoue, on garde le fichier original
+      // Si la conversion échoue (navigateur non-Safari), on garde l'original.
+      // La preview HEIC s'affichera quand même sur iOS Safari.
     }
   }
   return {
@@ -87,17 +119,9 @@ export default function UploadClient({ niveau }: UploadClientProps) {
     }
   }, [])
 
+  // onDrop : on passe directement à addFiles qui gère la limite en interne
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    setPhotos((prev) => {
-      const remaining = MAX_PHOTOS - prev.length
-      if (remaining <= 0) {
-        setError(`Maximum ${MAX_PHOTOS} photos.`)
-        return prev
-      }
-      const toAdd = acceptedFiles.slice(0, remaining)
-      addFiles(toAdd)
-      return prev
-    })
+    if (acceptedFiles.length > 0) addFiles(acceptedFiles)
   }, [addFiles])
 
   // Handler pour l'input caméra (Bug 1 — capture="environment")
@@ -114,6 +138,9 @@ export default function UploadClient({ niveau }: UploadClientProps) {
     maxFiles: MAX_PHOTOS,
     maxSize: 20 * 1024 * 1024,
     disabled: step === 'extracting' || isProcessing || photos.length >= MAX_PHOTOS,
+    // Désactive l'API showOpenFilePicker() — elle lève "The string did not match
+    // the expected pattern." sur iOS Safari avec le pattern image/* (fix Bug 2)
+    useFsAccessApi: false,
   })
 
   async function handleExtract() {
