@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 
+// Vision sur plusieurs pages peut dépasser 10s — on autorise jusqu'à 60s
+// (sinon Vercel coupe la fonction et l'extraction échoue).
+export const maxDuration = 60
+export const runtime = 'nodejs'
+
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 type ImageBlock = {
@@ -23,14 +28,23 @@ export async function POST(request: NextRequest) {
 
     // Build content blocks: interleave image + page label
     const contentBlocks: (ImageBlock | { type: 'text'; text: string })[] = []
+    const SUPPORTED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const bytes = await file.arrayBuffer()
+
+      // Anthropic Vision limite chaque image à ~5 Mo
+      if (bytes.byteLength > 5 * 1024 * 1024) {
+        return NextResponse.json(
+          { error: `La page ${i + 1} est trop lourde (max 5 Mo). Reprends la photo de plus loin.` },
+          { status: 400 }
+        )
+      }
+
       const base64 = Buffer.from(bytes).toString('base64')
       // Anthropic Vision n'accepte que jpeg/png/gif/webp — on normalise les types non supportés (HEIC, etc.)
-      const SUPPORTED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-      const rawType = file.type || 'image/jpeg'
+      const rawType = (file.type || '').toLowerCase()
       const mediaType = (SUPPORTED.includes(rawType) ? rawType : 'image/jpeg') as ImageBlock['source']['media_type']
 
       contentBlocks.push({ type: 'text', text: `--- Page ${i + 1} sur ${files.length} ---` })
@@ -62,10 +76,20 @@ Réponds uniquement avec le contenu extrait, sans commentaire ni mention des num
       messages: [{ role: 'user', content: contentBlocks }],
     })
 
-    const text = message.content[0].type === 'text' ? message.content[0].text : ''
+    const text = message.content[0]?.type === 'text' ? message.content[0].text : ''
     return NextResponse.json({ text })
   } catch (error) {
     console.error('Extract error:', error)
-    return NextResponse.json({ error: "Erreur lors de l'extraction" }, { status: 500 })
+    // Remonte le vrai message (erreur API Anthropic, clé manquante, format refusé…)
+    const detail =
+      error instanceof Anthropic.APIError
+        ? `${error.status ?? ''} ${error.message}`.trim()
+        : error instanceof Error
+        ? error.message
+        : 'inconnue'
+    return NextResponse.json(
+      { error: `Erreur lors de l'extraction : ${detail}` },
+      { status: 500 }
+    )
   }
 }
