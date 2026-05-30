@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/Navbar'
 import HistoriqueList from '@/components/dashboard/HistoriqueList'
 import ProgressionChart from '@/components/dashboard/ProgressionChart'
+import EnfantNiveauEditor from '@/components/dashboard/EnfantNiveauEditor'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -44,17 +45,18 @@ export default async function EnfantDashboardPage({ params }: Props) {
           <Link href="/dashboard" className="text-slate-400 hover:text-slate-600 transition-colors">←</Link>
           <div>
             <h1 className="text-2xl font-bold text-slate-900">
-              {childPrenom} <span className="text-slate-400 font-normal text-lg">— lecture seule</span>
+              {childPrenom}
             </h1>
             {childNiveau && <p className="text-slate-500 mt-0.5">{childNiveau}</p>}
           </div>
         </div>
 
-        {/* Read-only badge */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-sm text-amber-700 flex items-center gap-2">
-          <span>👁️</span>
-          <span>Vous consultez les résultats de {childPrenom} en lecture seule.</span>
-        </div>
+        {/* Niveau scolaire — modifiable par le parent */}
+        <EnfantNiveauEditor
+          childId={childId}
+          childPrenom={childPrenom}
+          currentNiveau={childNiveau ?? 'CP'}
+        />
 
         {/* Progression */}
         <ProgressionChart controles={controles ?? []} />

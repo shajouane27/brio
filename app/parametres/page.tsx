@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/Navbar'
 import LinkCodeGenerator from '@/components/dashboard/LinkCodeGenerator'
+import NiveauEditor from '@/components/NiveauEditor'
+import { NIVEAUX } from '@/lib/niveaux'
 
 export default async function ParametresPage() {
   const supabase = await createClient()
@@ -52,6 +54,9 @@ export default async function ParametresPage() {
             </div>
           </div>
         </div>
+
+        {/* Niveau scolaire */}
+        <NiveauEditor currentNiveau={niveau ?? NIVEAUX[0]} />
 
         {/* Link code generator */}
         <LinkCodeGenerator />
