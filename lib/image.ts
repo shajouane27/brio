@@ -1,5 +1,27 @@
 const MAX_DIMENSION = 2000 // px — réduit les très grandes photos avant upload
 
+// Extensions image reconnues (iPhone + Android)
+const IMAGE_EXT_RE = /\.(jpe?g|png|webp|heic|heif|gif|bmp|tiff?)$/i
+
+/**
+ * Détermine si un fichier est (très probablement) une image.
+ *
+ * Volontairement PERMISSIF — les iPhone renvoient souvent un type MIME vide
+ * ou non standard pour les HEIC. On n'écarte un fichier QUE s'il est
+ * explicitement d'un autre type (PDF, vidéo, etc.) ET sans extension image.
+ */
+export function isImageFile(file: File): boolean {
+  const type = (file.type || '').toLowerCase()
+
+  // Accepté : MIME image, OU vide, OU heic/heif (quirk iPhone)
+  if (type === '' || type === 'image/heic' || type === 'image/heif' || type.startsWith('image/')) {
+    return true
+  }
+
+  // MIME non-image explicite → on se rabat sur l'extension du nom
+  return IMAGE_EXT_RE.test(file.name)
+}
+
 /**
  * Normalise N'IMPORTE quelle image (HEIC, PNG, JPG, WEBP) en JPEG via Canvas.
  *

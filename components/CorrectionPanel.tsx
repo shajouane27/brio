@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { toJpeg } from '@/lib/image'
+import { toJpeg, isImageFile } from '@/lib/image'
 
 interface CorrectionQuestion {
   numero: string
@@ -58,17 +58,24 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
     }
   }
 
+  function acceptFile(f: File | undefined) {
+    if (!f) return
+    if (isImageFile(f)) {
+      addFile(f)
+    } else {
+      setError('Ce fichier n’est pas une image. Formats acceptés : JPG, PNG, WEBP, HEIC.')
+    }
+  }
+
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const f = e.target.files?.[0]
-    if (f) addFile(f)
+    acceptFile(e.target.files?.[0])
     e.target.value = ''
   }
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault()
     setIsDragActive(false)
-    const f = Array.from(e.dataTransfer.files).find((x) => x.type.startsWith('image/'))
-    if (f) addFile(f)
+    acceptFile(Array.from(e.dataTransfer.files)[0])
   }
 
   async function handleCorrect() {

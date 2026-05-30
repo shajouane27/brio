@@ -6,7 +6,7 @@ import { useState, useCallback, useRef } from 'react'
 import ControleModal from '@/components/ControleModal'
 import ResultPanel from '@/components/ResultPanel'
 import PhotoGallery, { PhotoItem } from '@/components/PhotoGallery'
-import { toJpeg } from '@/lib/image'
+import { toJpeg, isImageFile } from '@/lib/image'
 
 type Step = 'upload' | 'extracting' | 'extracted' | 'generating' | 'done'
 
@@ -65,12 +65,20 @@ export default function UploadClient({ niveau }: UploadClientProps) {
 
   const inputsDisabled = step === 'extracting' || isProcessing || photos.length >= MAX_PHOTOS
 
+  // Sépare les images des fichiers non-image, ajoute les images,
+  // et n'affiche une erreur que si AUCUN fichier valide n'a été retenu.
+  function acceptFiles(all: File[]) {
+    const images = all.filter(isImageFile)
+    if (images.length > 0) {
+      addFiles(images)
+    } else if (all.length > 0) {
+      setError('Ce fichier n’est pas une image. Formats acceptés : JPG, PNG, WEBP, HEIC.')
+    }
+  }
+
   // Handler partagé pour les inputs natifs (galerie + caméra)
   function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? []).filter((f) =>
-      f.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name)
-    )
-    if (files.length > 0) addFiles(files)
+    acceptFiles(Array.from(e.target.files ?? []))
     e.target.value = '' // reset pour pouvoir re-sélectionner le même fichier
   }
 
@@ -79,8 +87,7 @@ export default function UploadClient({ niveau }: UploadClientProps) {
     e.preventDefault()
     setIsDragActive(false)
     if (inputsDisabled) return
-    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'))
-    if (files.length > 0) addFiles(files)
+    acceptFiles(Array.from(e.dataTransfer.files))
   }
 
   async function handleExtract() {
