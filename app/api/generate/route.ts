@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { CLAUDE_MODEL } from '@/lib/model'
 
 export const maxDuration = 60
 export const runtime = 'nodejs'
@@ -69,7 +70,7 @@ Format de réponse en Markdown bien structuré, comme un vrai sujet de contrôle
     }
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: CLAUDE_MODEL,
       max_tokens: 4096,
       messages: [
         {

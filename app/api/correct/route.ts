@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { CLAUDE_MODEL } from '@/lib/model'
 
 export const maxDuration = 60
 export const runtime = 'nodejs'
@@ -28,7 +29,7 @@ export async function POST(request: NextRequest) {
       'par lettres (A=excellent, B=bien, C=assez bien, D=passable, E=insuffisant)'
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: CLAUDE_MODEL,
       max_tokens: 4096,
       messages: [
         {

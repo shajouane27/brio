@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { CLAUDE_MODEL } from '@/lib/model'
 
 // Vision sur plusieurs pages peut dépasser 10s — on autorise jusqu'à 60s
 // (sinon Vercel coupe la fonction et l'extraction échoue).
@@ -71,7 +72,7 @@ Réponds uniquement avec le contenu extrait, sans commentaire ni mention des num
     })
 
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: CLAUDE_MODEL,
       max_tokens: 8192,
       messages: [{ role: 'user', content: contentBlocks }],
     })
