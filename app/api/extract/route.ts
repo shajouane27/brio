@@ -28,7 +28,10 @@ export async function POST(request: NextRequest) {
       const file = files[i]
       const bytes = await file.arrayBuffer()
       const base64 = Buffer.from(bytes).toString('base64')
-      const mediaType = (file.type || 'image/jpeg') as ImageBlock['source']['media_type']
+      // Anthropic Vision n'accepte que jpeg/png/gif/webp — on normalise les types non supportés (HEIC, etc.)
+      const SUPPORTED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+      const rawType = file.type || 'image/jpeg'
+      const mediaType = (SUPPORTED.includes(rawType) ? rawType : 'image/jpeg') as ImageBlock['source']['media_type']
 
       contentBlocks.push({ type: 'text', text: `--- Page ${i + 1} sur ${files.length} ---` })
       contentBlocks.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } })

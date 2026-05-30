@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 import ControleModal from '@/components/ControleModal'
 import ResultPanel from '@/components/ResultPanel'
@@ -16,9 +16,46 @@ interface UploadClientProps {
   niveau: string
 }
 
+// Detecte si un fichier est HEIC/HEIF
+function isHeic(file: File): boolean {
+  if (file.type === 'image/heic' || file.type === 'image/heif') return true
+  const name = file.name.toLowerCase()
+  return name.endsWith('.heic') || name.endsWith('.heif')
+}
+
+// Convertit un fichier HEIC en JPEG (browser only, import dynamique)
+async function convertHeicToJpeg(file: File): Promise<File> {
+  const heic2any = (await import('heic2any')).default
+  const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 })
+  const jpegBlob = Array.isArray(blob) ? blob[0] : blob
+  return new File(
+    [jpegBlob],
+    file.name.replace(/\.(heic|heif)$/i, '.jpg'),
+    { type: 'image/jpeg' }
+  )
+}
+
+// Prépare un fichier : conversion HEIC si nécessaire + création de la preview
+async function prepareFile(file: File): Promise<PhotoItem> {
+  let processedFile = file
+  if (isHeic(file)) {
+    try {
+      processedFile = await convertHeicToJpeg(file)
+    } catch {
+      // Si la conversion échoue, on garde le fichier original
+    }
+  }
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    file: processedFile,
+    preview: URL.createObjectURL(processedFile),
+  }
+}
+
 export default function UploadClient({ niveau }: UploadClientProps) {
   const [step, setStep] = useState<Step>('upload')
   const [photos, setPhotos] = useState<PhotoItem[]>([])
+  const [isProcessing, setIsProcessing] = useState(false)
   const [courseText, setCourseText] = useState('')
   const [generatedContent, setGeneratedContent] = useState('')
   const [generationType, setGenerationType] = useState<'exercices' | 'controle' | null>(null)
@@ -26,8 +63,31 @@ export default function UploadClient({ niveau }: UploadClientProps) {
   const [controleOptions, setControleOptions] = useState<{ duree: string; notation: string } | null>(null)
   const [error, setError] = useState('')
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  // Ref pour l'input caméra dédié (Bug 1)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+
+  // Fonction centrale d'ajout de fichiers (utilisée par dropzone ET input caméra)
+  const addFiles = useCallback(async (files: File[]) => {
     setError('')
+    setIsProcessing(true)
+    try {
+      const newItems = await Promise.all(files.map(prepareFile))
+      setPhotos((prev) => {
+        const remaining = MAX_PHOTOS - prev.length
+        if (remaining <= 0) {
+          setError(`Maximum ${MAX_PHOTOS} photos.`)
+          return prev
+        }
+        return [...prev, ...newItems.slice(0, remaining)]
+      })
+    } catch {
+      setError('Erreur lors du traitement de la photo.')
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [])
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
     setPhotos((prev) => {
       const remaining = MAX_PHOTOS - prev.length
       if (remaining <= 0) {
@@ -35,21 +95,25 @@ export default function UploadClient({ niveau }: UploadClientProps) {
         return prev
       }
       const toAdd = acceptedFiles.slice(0, remaining)
-      const newItems: PhotoItem[] = toAdd.map((file) => ({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        file,
-        preview: URL.createObjectURL(file),
-      }))
-      return [...prev, ...newItems]
+      addFiles(toAdd)
+      return prev
     })
-  }, [])
+  }, [addFiles])
+
+  // Handler pour l'input caméra (Bug 1 — capture="environment")
+  function handleCameraChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (files.length > 0) addFiles(files)
+    // Reset l'input pour permettre de reprendre la même photo
+    e.target.value = ''
+  }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.heic'] },
+    accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'] },
     maxFiles: MAX_PHOTOS,
     maxSize: 20 * 1024 * 1024,
-    disabled: step === 'extracting' || photos.length >= MAX_PHOTOS,
+    disabled: step === 'extracting' || isProcessing || photos.length >= MAX_PHOTOS,
   })
 
   async function handleExtract() {
@@ -62,14 +126,28 @@ export default function UploadClient({ niveau }: UploadClientProps) {
       formData.append('images', p.file)
     }
 
+    // Timeout de 2 min pour éviter le loading infini sur mobile (Bug 2)
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 120_000)
+
     try {
-      const res = await fetch('/api/extract', { method: 'POST', body: formData })
+      const res = await fetch('/api/extract', {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      })
+      clearTimeout(timeoutId)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       setCourseText(data.text)
       setStep('extracted')
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      clearTimeout(timeoutId)
+      if (e instanceof Error && e.name === 'AbortError') {
+        setError('La requête a pris trop de temps. Vérifie ta connexion et réessaie.')
+      } else {
+        setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      }
       setStep('upload')
     }
   }
@@ -147,24 +225,56 @@ export default function UploadClient({ niveau }: UploadClientProps) {
       {/* ── Upload zone ──────────────────────────────────────────────────── */}
       {(step === 'upload' || step === 'extracting') && (
         <div className="space-y-4">
+          {/* Input caméra dédié — Bug 1 fix : capture="environment" */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleCameraChange}
+          />
+
           {/* Dropzone — shown only when under the limit */}
           {photos.length < MAX_PHOTOS && (
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all
-                ${step === 'extracting' ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
-                ${isDragActive ? 'border-indigo-400 bg-indigo-50' : 'border-slate-300 hover:border-indigo-300 hover:bg-slate-50'}`}
-            >
-              <input {...getInputProps()} />
-              <div className="text-4xl mb-2">📸</div>
-              <p className="font-semibold text-slate-700">
-                {isDragActive ? 'Dépose ici !' : photos.length === 0 ? 'Dépose tes photos de cours ici' : 'Ajouter d\'autres pages'}
-              </p>
-              <p className="text-sm text-slate-400 mt-1">ou clique pour choisir des fichiers</p>
-              <p className="text-xs text-slate-400 mt-2">
-                JPG, PNG, WEBP, HEIC · Max 20 Mo par photo ·{' '}
-                {MAX_PHOTOS - photos.length} emplacement{MAX_PHOTOS - photos.length > 1 ? 's' : ''} restant{MAX_PHOTOS - photos.length > 1 ? 's' : ''}
-              </p>
+            <div className="space-y-2">
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all
+                  ${step === 'extracting' || isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+                  ${isDragActive ? 'border-indigo-400 bg-indigo-50' : 'border-slate-300 hover:border-indigo-300 hover:bg-slate-50'}`}
+              >
+                <input {...getInputProps()} />
+                <div className="text-4xl mb-2">
+                  {isProcessing ? '⏳' : '🖼️'}
+                </div>
+                <p className="font-semibold text-slate-700">
+                  {isProcessing
+                    ? 'Traitement en cours…'
+                    : isDragActive
+                    ? 'Dépose ici !'
+                    : photos.length === 0
+                    ? 'Galerie — choisis tes photos de cours'
+                    : 'Ajouter d\'autres pages depuis la galerie'}
+                </p>
+                {!isProcessing && (
+                  <p className="text-xs text-slate-400 mt-2">
+                    JPG, PNG, WEBP, HEIC · Max 20 Mo ·{' '}
+                    {MAX_PHOTOS - photos.length} emplacement{MAX_PHOTOS - photos.length > 1 ? 's' : ''} restant{MAX_PHOTOS - photos.length > 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+
+              {/* Bouton caméra dédié — Bug 1 fix */}
+              <button
+                type="button"
+                disabled={step === 'extracting' || isProcessing}
+                onClick={() => cameraInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 hover:border-indigo-300 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none rounded-2xl py-4 text-slate-600 font-medium transition-all"
+              >
+                <span className="text-xl">📷</span>
+                Prendre une photo
+              </button>
             </div>
           )}
 
