@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import Image from 'next/image'
-import { useDropzone } from 'react-dropzone'
+import { useState, useRef } from 'react'
+import { toJpeg } from '@/lib/image'
 
 interface CorrectionQuestion {
   numero: string
@@ -39,21 +38,38 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const f = acceptedFiles[0]
-    if (!f) return
-    setFile(f)
-    setPreview(URL.createObjectURL(f))
+  const [isDragActive, setIsDragActive] = useState(false)
+  const [processing, setProcessing] = useState(false)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
+
+  async function addFile(f: File) {
+    setProcessing(true)
     setResult(null)
     setError('')
-  }, [])
+    try {
+      const jpeg = await toJpeg(f)
+      setFile(jpeg)
+      setPreview(URL.createObjectURL(jpeg))
+    } catch {
+      setError('Erreur lors du traitement de la photo.')
+    } finally {
+      setProcessing(false)
+    }
+  }
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.heic'] },
-    maxFiles: 1,
-    maxSize: 20 * 1024 * 1024,
-  })
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (f) addFile(f)
+    e.target.value = ''
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragActive(false)
+    const f = Array.from(e.dataTransfer.files).find((x) => x.type.startsWith('image/'))
+    if (f) addFile(f)
+  }
 
   async function handleCorrect() {
     if (!file) return
@@ -107,18 +123,43 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
 
       {!result ? (
         <div className="space-y-4">
-          {/* Dropzone */}
+          {/* Inputs natifs cachés — galerie + caméra */}
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleInputChange}
+          />
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleInputChange}
+          />
+
+          {/* Zone galerie */}
           <div
-            {...getRootProps()}
+            onClick={() => { if (!processing) galleryInputRef.current?.click() }}
+            onDragOver={(e) => { e.preventDefault(); setIsDragActive(true) }}
+            onDragLeave={() => setIsDragActive(false)}
+            onDrop={handleDrop}
             className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all
               ${isDragActive ? 'border-indigo-400 bg-indigo-50' : 'border-slate-300 hover:border-indigo-300 hover:bg-slate-50'}
               ${preview ? 'border-indigo-300 bg-indigo-50' : ''}`}
           >
-            <input {...getInputProps()} />
-            {preview ? (
+            {processing ? (
+              <div className="space-y-2">
+                <div className="text-4xl">⏳</div>
+                <p className="font-semibold text-slate-700">Traitement en cours…</p>
+              </div>
+            ) : preview ? (
               <div className="space-y-3">
                 <div className="relative w-full max-h-52 overflow-hidden rounded-xl">
-                  <Image src={preview} alt="Aperçu copie" width={500} height={350} className="w-full object-contain max-h-52" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={preview} alt="Aperçu copie" className="w-full object-contain max-h-52" />
                 </div>
                 <p className="text-sm text-indigo-600 font-medium">Clique pour changer la photo</p>
               </div>
@@ -126,12 +167,23 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
               <div className="space-y-2">
                 <div className="text-4xl">📄</div>
                 <p className="font-semibold text-slate-700">
-                  {isDragActive ? 'Dépose ici !' : 'Dépose la photo de ta copie'}
+                  {isDragActive ? 'Dépose ici !' : 'Choisis la photo de ta copie'}
                 </p>
                 <p className="text-sm text-slate-400">JPG, PNG, WEBP, HEIC · Max 20 Mo</p>
               </div>
             )}
           </div>
+
+          {/* Bouton caméra dédié */}
+          <button
+            type="button"
+            disabled={processing}
+            onClick={() => cameraInputRef.current?.click()}
+            className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 hover:border-indigo-300 hover:bg-slate-50 disabled:opacity-40 rounded-2xl py-4 text-slate-600 font-medium transition-all"
+          >
+            <span className="text-xl">📷</span>
+            Prendre une photo
+          </button>
 
           {error && (
             <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>

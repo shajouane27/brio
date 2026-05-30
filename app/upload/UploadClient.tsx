@@ -3,10 +3,10 @@
 export const dynamic = 'force-dynamic'
 
 import { useState, useCallback, useRef } from 'react'
-import { useDropzone } from 'react-dropzone'
 import ControleModal from '@/components/ControleModal'
 import ResultPanel from '@/components/ResultPanel'
 import PhotoGallery, { PhotoItem } from '@/components/PhotoGallery'
+import { toJpeg } from '@/lib/image'
 
 type Step = 'upload' | 'extracting' | 'extracted' | 'generating' | 'done'
 
@@ -16,67 +16,9 @@ interface UploadClientProps {
   niveau: string
 }
 
-// Detecte si un fichier est HEIC/HEIF
-function isHeic(file: File): boolean {
-  if (file.type === 'image/heic' || file.type === 'image/heif') return true
-  const name = file.name.toLowerCase()
-  return name.endsWith('.heic') || name.endsWith('.heif')
-}
-
-/**
- * Convertit HEIC → JPEG via Canvas (sans librairie externe, sans Worker).
- * iOS Safari affiche nativement HEIC dans <img>, donc on peut passer par
- * img → canvas → toBlob pour obtenir un JPEG compatible Anthropic.
- * Sur les autres navigateurs qui ne savent pas afficher HEIC, img.onerror
- * est déclenché et on rejette la promesse → appelant garde l'original.
- */
-function heicToJpegViaCanvas(file: File): Promise<File> {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file)
-    const img = new Image()
-
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      const canvas = document.createElement('canvas')
-      canvas.width = img.naturalWidth
-      canvas.height = img.naturalHeight
-      const ctx = canvas.getContext('2d')
-      if (!ctx) { reject(new Error('canvas ctx unavailable')); return }
-      ctx.drawImage(img, 0, 0)
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) { reject(new Error('toBlob failed')); return }
-          resolve(new File(
-            [blob],
-            file.name.replace(/\.(heic|heif)$/i, '.jpg'),
-            { type: 'image/jpeg' }
-          ))
-        },
-        'image/jpeg',
-        0.85
-      )
-    }
-
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      reject(new Error('image load failed'))
-    }
-
-    img.src = url
-  })
-}
-
-// Prépare un fichier : conversion HEIC si nécessaire + création de la preview
+// Prépare un fichier : conversion JPEG + création de la preview
 async function prepareFile(file: File): Promise<PhotoItem> {
-  let processedFile = file
-  if (isHeic(file)) {
-    try {
-      processedFile = await heicToJpegViaCanvas(file)
-    } catch {
-      // Si la conversion échoue (navigateur non-Safari), on garde l'original.
-      // La preview HEIC s'affichera quand même sur iOS Safari.
-    }
-  }
+  const processedFile = await toJpeg(file)
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     file: processedFile,
@@ -95,8 +37,10 @@ export default function UploadClient({ niveau }: UploadClientProps) {
   const [controleOptions, setControleOptions] = useState<{ duree: string; notation: string } | null>(null)
   const [error, setError] = useState('')
 
-  // Ref pour l'input caméra dédié (Bug 1)
+  // Refs pour les inputs natifs (galerie + caméra)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+  const [isDragActive, setIsDragActive] = useState(false)
 
   // Fonction centrale d'ajout de fichiers (utilisée par dropzone ET input caméra)
   const addFiles = useCallback(async (files: File[]) => {
@@ -119,29 +63,25 @@ export default function UploadClient({ niveau }: UploadClientProps) {
     }
   }, [])
 
-  // onDrop : on passe directement à addFiles qui gère la limite en interne
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) addFiles(acceptedFiles)
-  }, [addFiles])
+  const inputsDisabled = step === 'extracting' || isProcessing || photos.length >= MAX_PHOTOS
 
-  // Handler pour l'input caméra (Bug 1 — capture="environment")
-  function handleCameraChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files ?? [])
+  // Handler partagé pour les inputs natifs (galerie + caméra)
+  function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []).filter((f) =>
+      f.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name)
+    )
     if (files.length > 0) addFiles(files)
-    // Reset l'input pour permettre de reprendre la même photo
-    e.target.value = ''
+    e.target.value = '' // reset pour pouvoir re-sélectionner le même fichier
   }
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'image/*': ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'] },
-    maxFiles: MAX_PHOTOS,
-    maxSize: 20 * 1024 * 1024,
-    disabled: step === 'extracting' || isProcessing || photos.length >= MAX_PHOTOS,
-    // Désactive l'API showOpenFilePicker() — elle lève "The string did not match
-    // the expected pattern." sur iOS Safari avec le pattern image/* (fix Bug 2)
-    useFsAccessApi: false,
-  })
+  // Drag & drop desktop (natif, sans librairie)
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault()
+    setIsDragActive(false)
+    if (inputsDisabled) return
+    const files = Array.from(e.dataTransfer.files).filter((f) => f.type.startsWith('image/'))
+    if (files.length > 0) addFiles(files)
+  }
 
   async function handleExtract() {
     if (!photos.length) return
@@ -164,9 +104,18 @@ export default function UploadClient({ niveau }: UploadClientProps) {
         signal: controller.signal,
       })
       clearTimeout(timeoutId)
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setCourseText(data.text)
+
+      // Lecture robuste : certaines erreurs renvoient du HTML, pas du JSON
+      const raw = await res.text()
+      let data: { text?: string; error?: string }
+      try {
+        data = JSON.parse(raw)
+      } catch {
+        throw new Error(`Réponse serveur invalide (${res.status})`)
+      }
+
+      if (!res.ok) throw new Error(data.error || `Erreur serveur (${res.status})`)
+      setCourseText(data.text ?? '')
       setStep('extracted')
     } catch (e) {
       clearTimeout(timeoutId)
@@ -252,26 +201,37 @@ export default function UploadClient({ niveau }: UploadClientProps) {
       {/* ── Upload zone ──────────────────────────────────────────────────── */}
       {(step === 'upload' || step === 'extracting') && (
         <div className="space-y-4">
-          {/* Input caméra dédié — Bug 1 fix : capture="environment" */}
+          {/* Inputs natifs cachés — galerie (multiple) + caméra (capture) */}
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={handleInputChange}
+          />
           <input
             ref={cameraInputRef}
             type="file"
             accept="image/*"
             capture="environment"
             className="hidden"
-            onChange={handleCameraChange}
+            onChange={handleInputChange}
           />
 
-          {/* Dropzone — shown only when under the limit */}
+          {/* Zone d'ajout — shown only when under the limit */}
           {photos.length < MAX_PHOTOS && (
             <div className="space-y-2">
+              {/* Galerie */}
               <div
-                {...getRootProps()}
+                onClick={() => { if (!inputsDisabled) galleryInputRef.current?.click() }}
+                onDragOver={(e) => { e.preventDefault(); setIsDragActive(true) }}
+                onDragLeave={() => setIsDragActive(false)}
+                onDrop={handleDrop}
                 className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all
-                  ${step === 'extracting' || isProcessing ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
+                  ${inputsDisabled ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
                   ${isDragActive ? 'border-indigo-400 bg-indigo-50' : 'border-slate-300 hover:border-indigo-300 hover:bg-slate-50'}`}
               >
-                <input {...getInputProps()} />
                 <div className="text-4xl mb-2">
                   {isProcessing ? '⏳' : '🖼️'}
                 </div>
@@ -292,10 +252,10 @@ export default function UploadClient({ niveau }: UploadClientProps) {
                 )}
               </div>
 
-              {/* Bouton caméra dédié — Bug 1 fix */}
+              {/* Bouton caméra dédié */}
               <button
                 type="button"
-                disabled={step === 'extracting' || isProcessing}
+                disabled={inputsDisabled}
                 onClick={() => cameraInputRef.current?.click()}
                 className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 hover:border-indigo-300 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none rounded-2xl py-4 text-slate-600 font-medium transition-all"
               >
