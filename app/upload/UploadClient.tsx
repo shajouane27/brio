@@ -181,25 +181,34 @@ export default function UploadClient({ niveau }: UploadClientProps) {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Analyser un cours</h1>
-        <p className="text-slate-500 mt-1">Prends en photo toutes les pages de ton cours et laisse Brio faire le reste.</p>
+      <div className="mb-8">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Analyser un cours</h1>
+        <p className="text-slate-500 mt-1.5">Prends en photo toutes les pages de ton cours et laisse Brio faire le reste.</p>
       </div>
 
-      {/* Step indicator */}
-      <div className="flex items-center gap-2 mb-8">
+      {/* Step indicator 1-2-3 */}
+      <div className="flex items-center justify-between max-w-md mb-10">
         {STEP_LABELS.map((s, i) => {
           const target = STEPS.indexOf(s.id as typeof STEPS[number])
+          const isDone = currentIdx > target
+          const isCurrent = currentIdx >= target && !isDone
           const isActive = currentIdx >= target
           return (
-            <div key={s.id} className="flex items-center gap-2">
-              {i > 0 && <div className={`h-0.5 w-8 ${isActive ? 'bg-indigo-400' : 'bg-slate-200'}`} />}
-              <div className={`flex items-center gap-1.5 text-sm font-medium ${isActive ? 'text-indigo-600' : 'text-slate-400'}`}>
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${isActive ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-400'}`}>
-                  {i + 1}
+            <div key={s.id} className="flex items-center flex-1 last:flex-none">
+              <div className="flex flex-col items-center gap-1.5">
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all
+                    ${isDone ? 'bg-brand-600 text-white' : isCurrent ? 'bg-brand-600 text-white ring-4 ring-brand-100' : 'bg-slate-200 text-slate-400'}`}
+                >
+                  {isDone ? '✓' : i + 1}
                 </div>
-                <span className="hidden sm:block">{s.label}</span>
+                <span className={`text-xs font-semibold ${isActive ? 'text-brand-700' : 'text-slate-400'}`}>
+                  {s.label}
+                </span>
               </div>
+              {i < STEP_LABELS.length - 1 && (
+                <div className={`h-1 flex-1 mx-2 rounded-full -mt-5 ${currentIdx > target ? 'bg-brand-500' : 'bg-slate-200'}`} />
+              )}
             </div>
           )
         })}
@@ -228,59 +237,63 @@ export default function UploadClient({ niveau }: UploadClientProps) {
 
           {/* Zone d'ajout — shown only when under the limit */}
           {photos.length < MAX_PHOTOS && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {/* Galerie */}
               <div
                 onClick={() => { if (!inputsDisabled) galleryInputRef.current?.click() }}
                 onDragOver={(e) => { e.preventDefault(); setIsDragActive(true) }}
                 onDragLeave={() => setIsDragActive(false)}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all
+                className={`border-2 border-dashed rounded-3xl px-6 py-10 sm:py-14 text-center transition-all
                   ${inputsDisabled ? 'opacity-40 pointer-events-none' : 'cursor-pointer'}
-                  ${isDragActive ? 'border-indigo-400 bg-indigo-50' : 'border-slate-300 hover:border-indigo-300 hover:bg-slate-50'}`}
+                  ${isDragActive ? 'border-brand-400 bg-brand-50 scale-[1.01]' : 'border-slate-300 hover:border-brand-300 hover:bg-brand-50/40'}`}
               >
-                <div className="text-4xl mb-2">
-                  {isProcessing ? '⏳' : '🖼️'}
+                <div className={`mx-auto w-16 h-16 rounded-2xl flex items-center justify-center text-3xl mb-4 transition-colors ${isDragActive ? 'bg-brand-100' : 'bg-slate-100'}`}>
+                  {isProcessing ? '⏳' : isDragActive ? '📥' : '🖼️'}
                 </div>
-                <p className="font-semibold text-slate-700">
+                <p className="font-bold text-slate-800 text-lg">
                   {isProcessing
                     ? 'Traitement en cours…'
                     : isDragActive
-                    ? 'Dépose ici !'
+                    ? 'Dépose tes photos ici !'
                     : photos.length === 0
-                    ? 'Galerie — choisis tes photos de cours'
-                    : 'Ajouter d\'autres pages depuis la galerie'}
+                    ? 'Choisis tes photos de cours'
+                    : 'Ajouter d\'autres pages'}
                 </p>
                 {!isProcessing && (
-                  <p className="text-xs text-slate-400 mt-2">
-                    JPG, PNG, WEBP, HEIC · Max 20 Mo ·{' '}
-                    {MAX_PHOTOS - photos.length} emplacement{MAX_PHOTOS - photos.length > 1 ? 's' : ''} restant{MAX_PHOTOS - photos.length > 1 ? 's' : ''}
-                  </p>
+                  <>
+                    <p className="text-sm text-slate-500 mt-1">depuis ta galerie, ou glisse-dépose ici</p>
+                    <p className="text-xs text-slate-400 mt-3">
+                      JPG, PNG, WEBP, HEIC · Max 20 Mo ·{' '}
+                      {MAX_PHOTOS - photos.length} emplacement{MAX_PHOTOS - photos.length > 1 ? 's' : ''} restant{MAX_PHOTOS - photos.length > 1 ? 's' : ''}
+                    </p>
+                  </>
                 )}
               </div>
 
-              {/* Bouton caméra dédié */}
+              {/* Bouton caméra dédié — accent orange */}
               <button
                 type="button"
                 disabled={inputsDisabled}
                 onClick={() => cameraInputRef.current?.click()}
-                className="w-full flex items-center justify-center gap-2 border-2 border-dashed border-slate-300 hover:border-indigo-300 hover:bg-slate-50 disabled:opacity-40 disabled:pointer-events-none rounded-2xl py-4 text-slate-600 font-medium transition-all"
+                className="w-full flex items-center justify-center gap-2.5 bg-accent-50 hover:bg-accent-100 border border-accent-200 text-accent-700 disabled:opacity-40 disabled:pointer-events-none rounded-2xl py-4 font-semibold transition-all"
               >
                 <span className="text-xl">📷</span>
-                Prendre une photo
+                Prendre une photo maintenant
               </button>
             </div>
           )}
 
           {/* Gallery */}
           {photos.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-3 bg-white rounded-2xl border border-slate-200 p-4 sm:p-5">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-slate-700">
-                  {photos.length} page{photos.length > 1 ? 's' : ''} — glisse pour réordonner
+                <p className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-100 text-brand-700 text-xs">{photos.length}</span>
+                  page{photos.length > 1 ? 's' : ''} · glisse pour réordonner
                 </p>
                 {photos.length === MAX_PHOTOS && (
-                  <span className="text-xs text-amber-600 font-medium bg-amber-50 px-2 py-0.5 rounded-full">
+                  <span className="text-xs text-accent-700 font-semibold bg-accent-50 px-2.5 py-1 rounded-full">
                     Maximum atteint
                   </span>
                 )}
@@ -295,14 +308,14 @@ export default function UploadClient({ niveau }: UploadClientProps) {
           )}
 
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>
+            <div className="bg-red-50 text-red-600 text-sm font-medium px-4 py-3 rounded-xl border border-red-100">{error}</div>
           )}
 
           {photos.length > 0 && (
             <button
               onClick={handleExtract}
               disabled={step === 'extracting'}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold py-4 rounded-2xl shadow-md shadow-brand-600/20 hover:shadow-lg hover:-translate-y-0.5 disabled:translate-y-0 transition-all flex items-center justify-center gap-2 text-base"
             >
               {step === 'extracting' ? (
                 <>
@@ -325,21 +338,22 @@ export default function UploadClient({ niveau }: UploadClientProps) {
 
       {/* ── Extracted text ───────────────────────────────────────────────── */}
       {(step === 'extracted' || step === 'generating') && (
-        <div className="space-y-4">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6">
+        <div className="space-y-5">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-slate-900 flex items-center gap-2">
-                <span>📄</span> Contenu extrait
-                <span className="text-xs font-normal text-slate-400">({photos.length} page{photos.length > 1 ? 's' : ''})</span>
+              <h2 className="font-bold text-slate-900 flex items-center gap-2">
+                <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-100 text-brand-700">📄</span>
+                Contenu extrait
+                <span className="text-xs font-medium text-slate-400">· {photos.length} page{photos.length > 1 ? 's' : ''}</span>
               </h2>
               <button
                 onClick={handleReset}
-                className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-sm font-medium text-slate-400 hover:text-brand-600 transition-colors"
               >
-                Recommencer
+                ↺ Recommencer
               </button>
             </div>
-            <div className="bg-slate-50 rounded-xl p-4 max-h-64 overflow-y-auto">
+            <div className="bg-slate-50 rounded-xl p-4 max-h-64 overflow-y-auto border border-slate-100">
               <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans leading-relaxed">
                 {courseText}
               </pre>
@@ -347,33 +361,44 @@ export default function UploadClient({ niveau }: UploadClientProps) {
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>
+            <div className="bg-red-50 text-red-600 text-sm font-medium px-4 py-3 rounded-xl border border-red-100">{error}</div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button
-              onClick={() => handleGenerate('exercices')}
-              disabled={step === 'generating'}
-              className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl transition-colors"
-            >
-              {step === 'generating' && generationType === 'exercices' ? (
-                <><Spinner /> Génération…</>
-              ) : (
-                <>✏️ Générer des exercices</>
-              )}
-            </button>
+          <div>
+            <p className="text-sm font-semibold text-slate-500 mb-3">Que veux-tu générer à partir de ce cours ?</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                onClick={() => handleGenerate('exercices')}
+                disabled={step === 'generating'}
+                className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-emerald-50 border-2 border-emerald-200 hover:border-emerald-400 disabled:opacity-50 text-emerald-700 font-bold py-5 rounded-2xl transition-all"
+              >
+                {step === 'generating' && generationType === 'exercices' ? (
+                  <><Spinner /> Génération…</>
+                ) : (
+                  <>
+                    <span className="text-2xl">✏️</span>
+                    <span>Générer des exercices</span>
+                    <span className="text-xs font-medium text-emerald-500">pour s&apos;entraîner</span>
+                  </>
+                )}
+              </button>
 
-            <button
-              onClick={() => setShowControleModal(true)}
-              disabled={step === 'generating'}
-              className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-3.5 rounded-xl transition-colors"
-            >
-              {step === 'generating' && generationType === 'controle' ? (
-                <><Spinner /> Génération…</>
-              ) : (
-                <>📋 Générer un contrôle type</>
-              )}
-            </button>
+              <button
+                onClick={() => setShowControleModal(true)}
+                disabled={step === 'generating'}
+                className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-brand-50 border-2 border-brand-200 hover:border-brand-400 disabled:opacity-50 text-brand-700 font-bold py-5 rounded-2xl transition-all"
+              >
+                {step === 'generating' && generationType === 'controle' ? (
+                  <><Spinner /> Génération…</>
+                ) : (
+                  <>
+                    <span className="text-2xl">📋</span>
+                    <span>Générer un contrôle type</span>
+                    <span className="text-xs font-medium text-brand-400">en conditions d&apos;examen</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
