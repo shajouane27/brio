@@ -1,5 +1,7 @@
 'use client'
 
+import Markdown from '../Markdown'
+
 interface Question {
   numero: string
   enonce_court: string
@@ -68,7 +70,7 @@ export default function CorrectionDetailModal({ controle, onClose }: Props) {
           {/* Note globale */}
           <div className={`relative overflow-hidden rounded-2xl p-5 text-center text-white bg-gradient-to-br ${heroClasses} shadow-md`}>
             <div className="text-5xl font-extrabold tracking-tight">{controle.correction.note_finale}</div>
-            <div className="text-white/90 text-sm mt-2">{controle.correction.appreciation}</div>
+            <div className="text-white/90 text-sm mt-2"><Markdown content={controle.correction.appreciation} inline /></div>
             {totalMax > 0 && (
               <div className="mt-4 max-w-xs mx-auto">
                 <div className="text-xs font-medium text-white/80 mb-1">{totalObtained.toFixed(1)} / {totalMax} points</div>
@@ -97,7 +99,7 @@ export default function CorrectionDetailModal({ controle, onClose }: Props) {
                     <span className={`shrink-0 w-6 h-6 rounded-full ${badge.bg} text-white text-xs font-bold flex items-center justify-center mt-0.5`}>
                       {badge.icon}
                     </span>
-                    <span className="text-sm font-semibold text-slate-800">Q{q.numero}. {q.enonce_court}</span>
+                    <span className="text-sm font-semibold text-slate-800">Q{q.numero}. <Markdown content={q.enonce_court} inline /></span>
                   </div>
                   <span className="text-sm font-bold shrink-0 text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">
                     {q.points_obtenus}/{q.points_max}
@@ -107,18 +109,18 @@ export default function CorrectionDetailModal({ controle, onClose }: Props) {
                 {q.reponse_eleve && (
                   <div className="bg-slate-50 rounded-lg px-3 py-1.5 text-xs ml-8">
                     <span className="text-slate-400">Réponse : </span>
-                    <span className="text-slate-700">{q.reponse_eleve}</span>
+                    <span className="text-slate-700"><Markdown content={q.reponse_eleve} inline /></span>
                   </div>
                 )}
 
                 {q.bon_element && (
-                  <p className="text-xs text-emerald-800 bg-emerald-50 rounded-lg px-3 py-1.5 ml-8">✓ {q.bon_element}</p>
+                  <p className="text-xs text-emerald-800 bg-emerald-50 rounded-lg px-3 py-1.5 ml-8">✓ <Markdown content={q.bon_element} inline /></p>
                 )}
                 {q.a_ameliorer && (
-                  <p className="text-xs text-accent-800 bg-accent-50 rounded-lg px-3 py-1.5 ml-8">→ {q.a_ameliorer}</p>
+                  <p className="text-xs text-accent-800 bg-accent-50 rounded-lg px-3 py-1.5 ml-8">→ <Markdown content={q.a_ameliorer} inline /></p>
                 )}
                 {q.commentaire_peda && (
-                  <p className="text-xs text-brand-800 italic bg-brand-50 rounded-lg px-3 py-1.5 ml-8">💡 {q.commentaire_peda}</p>
+                  <p className="text-xs text-brand-800 italic bg-brand-50 rounded-lg px-3 py-1.5 ml-8">💡 <Markdown content={q.commentaire_peda} inline /></p>
                 )}
               </div>
             )

@@ -45,28 +45,49 @@ Format de réponse en Markdown bien structuré.`
                             notation === '/100' ? 'noté sur 100 points' :
                             'noté par lettres (A, B, C, D, E)'
 
-      prompt = `Tu es un professeur expert du système éducatif français pour le niveau ${niveau || 'lycée'}.
+      prompt = `Tu es un professeur du système éducatif français pour le niveau ${niveau || 'lycée'}.
 
-À partir du cours suivant, génère un contrôle type conforme aux standards de l'Éducation Nationale française.
+À partir du cours suivant, rédige un sujet de contrôle qui ressemble EXACTEMENT à un vrai contrôle d'école française : sobre, professionnel, sans émojis, sans gras inutile.
 
 COURS :
 ${courseText}
 
-PARAMÈTRES DU CONTRÔLE :
+PARAMÈTRES :
 - Durée : ${dureeLabel}
 - Notation : ${notationLabel}
 - Niveau : ${niveau || 'lycée'}
 
-CONSIGNES DE MISE EN FORME (respecte impérativement le format de l'Éducation Nationale) :
-1. En-tête avec : Matière, Niveau, Durée, Date (à compléter), Nom/Prénom (à compléter)
-2. Barème détaillé avec points attribués à chaque question/partie
-3. Structure en parties numérotées (I., II., III.) avec sous-questions
-4. Questions allant du plus simple au plus complexe
-5. Mention "Bonne chance !" ou formule d'encouragement à la fin
-6. Le total des points doit correspondre exactement au système de notation choisi
-7. Adapte la durée au nombre et à la complexité des questions
+Réponds UNIQUEMENT en Markdown, en respectant SCRUPULEUSEMENT ce gabarit :
 
-Format de réponse en Markdown bien structuré, comme un vrai sujet de contrôle.`
+1. EN-TÊTE — un tableau Markdown avec l'identité de l'élève et la note à droite :
+
+| Nom / Prénom | Classe | Date | Note |
+|---|---|---|---|
+| ........................ | .......... | .......... | ........ ${notation === '/100' ? '/ 100' : notation === 'lettres' ? '' : '/ 20'} |
+
+2. TITRE — un titre de niveau 1 centré avec la matière et la durée, par exemple :
+# Contrôle de [Matière] — Durée : ${dureeLabel}
+
+3. CONSIGNE courte en italique sous le titre (matériel autorisé, soin, etc.).
+
+4. PARTIES — numérotées en chiffres romains, en titre de niveau 2, avec le total de points de la partie entre parenthèses :
+## I. [Titre de la partie] (... points)
+
+5. SOUS-QUESTIONS — une liste numérotée (1., 2., 3.). Chaque question se termine par son barème entre parenthèses, ex : (2 pts). Sous CHAQUE question, laisse des lignes de réponse en pointillés (indentées de 3 espaces pour rester dans la question) :
+
+1. Énoncé de la question. (2 pts)
+   ............................................................
+   ............................................................
+
+2. Énoncé suivant. (4 pts)
+   ............................................................
+
+RÈGLES IMPORTANTES :
+- Le total des points doit correspondre EXACTEMENT à la notation (${notationLabel}).
+- 2 à 4 parties (I, II, III…), de la plus simple à la plus complexe.
+- Adapte la quantité de questions à la durée (${dureeLabel}).
+- Aucun émoji. Pas de mise en gras des énoncés. Reste sobre et scolaire.
+- Ne mets ni introduction ni commentaire avant ou après le sujet : commence directement par le tableau d'en-tête.`
     }
 
     const message = await anthropic.messages.create({

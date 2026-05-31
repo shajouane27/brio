@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { toJpeg, isImageFile } from '@/lib/image'
+import Markdown from './Markdown'
 
 interface CorrectionQuestion {
   numero: string
@@ -246,7 +247,7 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
                 </div>
               )}
               <div className="text-6xl font-extrabold tracking-tight leading-none drop-shadow-sm">{result.note_finale}</div>
-              <p className="text-white/90 text-sm mt-3 max-w-sm mx-auto">{result.appreciation}</p>
+              <p className="text-white/90 text-sm mt-3 max-w-sm mx-auto"><Markdown content={result.appreciation} inline /></p>
               {totalMax > 0 && (
                 <div className="mt-5 max-w-xs mx-auto">
                   <div className="text-xs font-medium text-white/80 mb-1.5">
@@ -282,7 +283,7 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
                           {badge.icon}
                         </span>
                         <span className="text-sm font-semibold text-slate-800">
-                          Q{q.numero}. {q.enonce_court}
+                          Q{q.numero}. <Markdown content={q.enonce_court} inline />
                         </span>
                       </div>
                       <span className="text-sm font-bold shrink-0 text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">
@@ -293,28 +294,28 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
                     {q.reponse_eleve && (
                       <div className="bg-slate-50 rounded-lg px-3 py-2 ml-8">
                         <span className="text-xs text-slate-400 font-medium">Ta réponse : </span>
-                        <span className="text-sm text-slate-700">{q.reponse_eleve}</span>
+                        <span className="text-sm text-slate-700"><Markdown content={q.reponse_eleve} inline /></span>
                       </div>
                     )}
 
                     {q.bon_element && (
                       <div className="flex gap-2 items-start ml-8 bg-emerald-50 rounded-lg px-3 py-2">
                         <span className="text-emerald-500 text-sm mt-0.5 shrink-0">✓</span>
-                        <span className="text-xs text-emerald-800 leading-relaxed">{q.bon_element}</span>
+                        <span className="text-xs text-emerald-800 leading-relaxed"><Markdown content={q.bon_element} inline /></span>
                       </div>
                     )}
 
                     {q.a_ameliorer && (
                       <div className="flex gap-2 items-start ml-8 bg-accent-50 rounded-lg px-3 py-2">
                         <span className="text-accent-500 text-sm mt-0.5 shrink-0">→</span>
-                        <span className="text-xs text-accent-800 leading-relaxed">{q.a_ameliorer}</span>
+                        <span className="text-xs text-accent-800 leading-relaxed"><Markdown content={q.a_ameliorer} inline /></span>
                       </div>
                     )}
 
                     {q.commentaire_peda && (
                       <div className="flex gap-2 items-start ml-8 bg-brand-50 rounded-lg px-3 py-2">
                         <span className="text-brand-500 text-sm mt-0.5 shrink-0">💡</span>
-                        <span className="text-xs text-brand-800 italic leading-relaxed">{q.commentaire_peda}</span>
+                        <span className="text-xs text-brand-800 italic leading-relaxed"><Markdown content={q.commentaire_peda} inline /></span>
                       </div>
                     )}
                   </div>
