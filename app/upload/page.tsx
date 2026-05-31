@@ -39,7 +39,7 @@ export default async function UploadPage({
     <div className="min-h-screen">
       <Navbar prenom={prenom} profileType={profileType} />
       <main className="max-w-3xl mx-auto px-4 py-8">
-        <UploadClient niveau={niveau} initialCourseText={initialCourseText} />
+        <UploadClient niveau={niveau} initialCourseText={initialCourseText} initialCoursId={coursId} />
       </main>
     </div>
   )

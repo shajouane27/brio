@@ -58,3 +58,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Erreur lors de la sauvegarde du cours' }, { status: 500 })
   }
 }
+
+// PATCH — enregistre la fiche de révision générée sur le cours correspondant.
+export async function PATCH(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+
+    const { id, fiche } = await request.json()
+    if (!id || typeof fiche !== 'string') {
+      return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 })
+    }
+
+    const { error } = await supabase
+      .from('cours')
+      .update({ fiche })
+      .eq('id', id)
+      .eq('user_id', user.id)
+
+    if (error) throw error
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('Save fiche error:', error)
+    return NextResponse.json({ error: 'Erreur lors de la sauvegarde de la fiche' }, { status: 500 })
+  }
+}

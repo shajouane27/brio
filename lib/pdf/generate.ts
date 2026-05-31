@@ -314,3 +314,120 @@ export async function generateControlePdf(
 
   return doc.save()
 }
+
+// ── Fiche de révision (rendu propre, imprimable) ──────────────────────────────
+
+export async function generateFichePdf(
+  content: string,
+  meta: { niveau: string }
+): Promise<Uint8Array> {
+  const doc = await PDFDocument.create()
+  const bold = await doc.embedFont(StandardFonts.HelveticaBold)
+  const regular = await doc.embedFont(StandardFonts.Helvetica)
+
+  const margin = 50
+  const pageWidth = 595
+  const pageHeight = 842
+  const contentWidth = pageWidth - margin * 2
+  const minY = 60
+
+  const brand = rgb(0.39, 0.4, 0.95)
+  const dark = rgb(0.1, 0.1, 0.2)
+  const gray = rgb(0.35, 0.35, 0.4)
+
+  let page = doc.addPage([pageWidth, pageHeight])
+  let y = pageHeight - 50
+
+  function newPage() { page = doc.addPage([pageWidth, pageHeight]); y = pageHeight - 50 }
+  function ensure(n: number) { if (y - n < minY) newPage() }
+
+  // En-tête
+  page.drawText('FICHE DE RÉVISION', { x: margin, y, size: 9, font: bold, color: brand })
+  if (meta.niveau) {
+    const w = regular.widthOfTextAtSize(meta.niveau, 9)
+    page.drawText(meta.niveau, { x: pageWidth - margin - w, y, size: 9, font: regular, color: gray })
+  }
+  y -= 10
+  page.drawRectangle({ x: margin, y, width: contentWidth, height: 2, color: brand })
+  y -= 24
+
+  for (const raw of content.split('\n')) {
+    const line = raw.trim()
+    if (!line || line === '---') { y -= 6; continue }
+
+    // Titre #
+    if (/^#\s/.test(line)) {
+      ensure(30)
+      for (const w of wrapText(stripMd(line), bold, 18, contentWidth)) {
+        page.drawText(w, { x: margin, y, size: 18, font: bold, color: dark }); y -= 24
+      }
+      y -= 6
+      continue
+    }
+
+    // Section ##
+    if (/^#{2,3}\s/.test(line)) {
+      ensure(28)
+      y -= 4
+      page.drawText(stripMd(line), { x: margin, y, size: 13, font: bold, color: brand })
+      y -= 14
+      page.drawRectangle({ x: margin, y: y + 4, width: contentWidth, height: 0.6, color: rgb(0.85, 0.86, 0.98) })
+      y -= 12
+      continue
+    }
+
+    // Citation > (encadré "À retenir")
+    if (/^>\s?/.test(line)) {
+      const text = stripMd(line.replace(/^>\s?/, ''))
+      const wrapped = wrapText(text, bold, 10.5, contentWidth - 24)
+      const boxH = wrapped.length * 16 + 12
+      ensure(boxH + 6)
+      page.drawRectangle({ x: margin, y: y - boxH + 14, width: contentWidth, height: boxH, color: rgb(0.95, 0.96, 1) })
+      page.drawRectangle({ x: margin, y: y - boxH + 14, width: 4, height: boxH, color: brand })
+      let ly = y
+      for (const w of wrapped) {
+        page.drawText(w, { x: margin + 14, y: ly, size: 10.5, font: bold, color: rgb(0.2, 0.2, 0.5) }); ly -= 16
+      }
+      y -= boxH + 6
+      continue
+    }
+
+    // Puce
+    if (/^[-*]\s+/.test(line)) {
+      const rest = line.replace(/^[-*]\s+/, '')
+      const def = rest.match(/^\*\*(.+?)\*\*\s*:?\s*(.*)$/)
+      ensure(18)
+      page.drawCircle({ x: margin + 4, y: y + 3, size: 1.6, color: brand })
+      if (def) {
+        const term = def[1].trim()
+        const definition = stripMd(def[2].trim())
+        const termLabel = definition ? `${term} : ` : term
+        page.drawText(termLabel, { x: margin + 14, y, size: 10, font: bold, color: dark })
+        const termW = bold.widthOfTextAtSize(termLabel, 10)
+        if (definition) {
+          const defWrapped = wrapText(definition, regular, 10, contentWidth - 16 - termW)
+          page.drawText(defWrapped[0] ?? '', { x: margin + 14 + termW, y, size: 10, font: regular, color: gray }); y -= 16
+          for (let i = 1; i < defWrapped.length; i++) { ensure(16); page.drawText(defWrapped[i], { x: margin + 14, y, size: 10, font: regular, color: gray }); y -= 16 }
+        } else { y -= 16 }
+        y -= 2
+      } else {
+        for (const w of wrapText(stripMd(rest), regular, 10, contentWidth - 16)) {
+          ensure(16); page.drawText(w, { x: margin + 14, y, size: 10, font: regular, color: rgb(0.15, 0.15, 0.2) }); y -= 16
+        }
+        y -= 2
+      }
+      continue
+    }
+
+    // Texte normal
+    for (const w of wrapText(stripMd(line), regular, 10, contentWidth)) {
+      ensure(16); page.drawText(w, { x: margin, y, size: 10, font: regular, color: rgb(0.15, 0.15, 0.2) }); y -= 16
+    }
+    y -= 2
+  }
+
+  const last = doc.getPage(doc.getPageCount() - 1)
+  last.drawText('Fiche de révision — Généré par Brio', { x: margin, y: 36, size: 8, font: regular, color: rgb(0.6, 0.6, 0.6) })
+
+  return doc.save()
+}

@@ -8,7 +8,7 @@ import ControleTimer from './ControleTimer'
 
 interface ResultPanelProps {
   content: string
-  type: 'exercices' | 'controle'
+  type: 'exercices' | 'controle' | 'fiche'
   niveau: string
   controleOptions?: { duree: string; notation: string }
   onReset: () => void
@@ -18,6 +18,7 @@ interface ResultPanelProps {
 export default function ResultPanel({ content, type, niveau, controleOptions, onReset, onBack }: ResultPanelProps) {
   const [copied, setCopied] = useState(false)
   const [showCorrection, setShowCorrection] = useState(false)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   async function handleCopy() {
     await navigator.clipboard.writeText(content)
@@ -25,8 +26,38 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
     setTimeout(() => setCopied(false), 2000)
   }
 
+  async function downloadFichePdf() {
+    setPdfLoading(true)
+    try {
+      const res = await fetch('/api/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, type: 'fiche', meta: { niveau } }),
+      })
+      if (!res.ok) throw new Error('pdf')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'brio-fiche-revision.pdf'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      alert('Impossible de générer le PDF. Réessaie.')
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
   const isControle = type === 'controle'
-  const title = isControle ? 'Contrôle type généré' : 'Exercices générés'
+  const isFiche = type === 'fiche'
+  const title = isControle ? 'Contrôle type généré' : isFiche ? 'Fiche de révision' : 'Exercices générés'
+  const headerGradient = isControle
+    ? 'from-brand-600 to-brand-700'
+    : isFiche
+    ? 'from-sky-500 to-cyan-600'
+    : 'from-emerald-500 to-emerald-600'
+  const headerIcon = isControle ? '📋' : isFiche ? '🗂️' : '✏️'
 
   if (showCorrection && isControle && controleOptions) {
     return (
@@ -49,10 +80,10 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
 
       {/* Main content card */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-        <div className={`px-6 py-5 flex items-center justify-between text-white bg-gradient-to-r ${isControle ? 'from-brand-600 to-brand-700' : 'from-emerald-500 to-emerald-600'}`}>
+        <div className={`px-6 py-5 flex items-center justify-between text-white bg-gradient-to-r ${headerGradient}`}>
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/20 text-xl">
-              {isControle ? '📋' : '✏️'}
+              {headerIcon}
             </span>
             <div>
               <h2 className="font-bold text-lg leading-tight">{title}</h2>
@@ -82,6 +113,25 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
         </div>
       )}
 
+      {/* PDF download — fiche de révision */}
+      {isFiche && (
+        <button
+          onClick={downloadFichePdf}
+          disabled={pdfLoading}
+          className="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-sky-500 to-cyan-600 hover:from-sky-600 hover:to-cyan-700 disabled:opacity-50 text-white font-bold py-4 rounded-2xl shadow-md shadow-sky-500/25 hover:shadow-lg hover:-translate-y-0.5 disabled:translate-y-0 transition-all text-base"
+        >
+          {pdfLoading ? (
+            <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+          ) : (
+            <span className="text-xl">🖨️</span>
+          )}
+          Télécharger la fiche en PDF
+        </button>
+      )}
+
       {/* Correction section — contrôle only */}
       {isControle && (
         <button
@@ -102,7 +152,7 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
         </button>
         <button
           onClick={onReset}
-          className={`flex-1 py-3 rounded-xl text-white font-semibold transition-colors text-sm ${isControle ? 'bg-brand-600 hover:bg-brand-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+          className={`flex-1 py-3 rounded-xl text-white font-semibold transition-colors text-sm ${isControle ? 'bg-brand-600 hover:bg-brand-700' : isFiche ? 'bg-sky-600 hover:bg-sky-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
         >
           ✨ Nouveau cours
         </button>

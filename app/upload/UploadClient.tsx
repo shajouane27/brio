@@ -16,6 +16,8 @@ interface UploadClientProps {
   niveau: string
   /** Si fourni (réutilisation d'un cours sauvegardé), on démarre à l'étape 2. */
   initialCourseText?: string
+  /** Id du cours réutilisé — pour rattacher la fiche de révision au bon cours. */
+  initialCoursId?: string
 }
 
 // Prépare un fichier : conversion JPEG + création de la preview
@@ -28,13 +30,17 @@ async function prepareFile(file: File): Promise<PhotoItem> {
   }
 }
 
-export default function UploadClient({ niveau, initialCourseText }: UploadClientProps) {
+type GenType = 'exercices' | 'controle' | 'fiche'
+
+export default function UploadClient({ niveau, initialCourseText, initialCoursId }: UploadClientProps) {
   const [step, setStep] = useState<Step>(initialCourseText ? 'extracted' : 'upload')
   const [photos, setPhotos] = useState<PhotoItem[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [courseText, setCourseText] = useState(initialCourseText ?? '')
   const [generatedContent, setGeneratedContent] = useState('')
-  const [generationType, setGenerationType] = useState<'exercices' | 'controle' | null>(null)
+  const [generationType, setGenerationType] = useState<GenType | null>(null)
+  // Id du cours en cours (extraction auto ou réutilisation) — pour rattacher la fiche
+  const coursIdRef = useRef<string | null>(initialCoursId ?? null)
   const [showControleModal, setShowControleModal] = useState(false)
   const [controleOptions, setControleOptions] = useState<{ duree: string; notation: string } | null>(null)
   const [error, setError] = useState('')
@@ -133,7 +139,10 @@ export default function UploadClient({ niveau, initialCourseText }: UploadClient
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contenu: data.text, niveau }),
-        }).catch(() => { /* silencieux : ne bloque pas l'élève */ })
+        })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((saved) => { if (saved?.id) coursIdRef.current = saved.id })
+          .catch(() => { /* silencieux : ne bloque pas l'élève */ })
       }
     } catch (e) {
       clearTimeout(timeoutId)
@@ -146,7 +155,7 @@ export default function UploadClient({ niveau, initialCourseText }: UploadClient
     }
   }
 
-  async function handleGenerate(type: 'exercices' | 'controle', options?: { duree: string; notation: string }) {
+  async function handleGenerate(type: GenType, options?: { duree: string; notation: string }) {
     setShowControleModal(false)
     setGenerationType(type)
     if (options) setControleOptions(options)
@@ -163,6 +172,15 @@ export default function UploadClient({ niveau, initialCourseText }: UploadClient
       if (!res.ok) throw new Error(data.error)
       setGeneratedContent(data.text)
       setStep('done')
+
+      // Rattache la fiche de révision au cours correspondant (arrière-plan)
+      if (type === 'fiche' && coursIdRef.current && data.text) {
+        fetch('/api/save-cours', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: coursIdRef.current, fiche: data.text }),
+        }).catch(() => { /* silencieux */ })
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erreur inconnue')
       setStep('extracted')
@@ -388,7 +406,7 @@ export default function UploadClient({ niveau, initialCourseText }: UploadClient
 
           <div>
             <p className="text-sm font-semibold text-slate-500 mb-3">Que veux-tu générer à partir de ce cours ?</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
                 onClick={() => handleGenerate('exercices')}
                 disabled={step === 'generating'}
@@ -417,6 +435,22 @@ export default function UploadClient({ niveau, initialCourseText }: UploadClient
                     <span className="text-2xl">📋</span>
                     <span>Générer un contrôle type</span>
                     <span className="text-xs font-medium text-brand-400">en conditions d&apos;examen</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                onClick={() => handleGenerate('fiche')}
+                disabled={step === 'generating'}
+                className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-sky-50 border-2 border-sky-200 hover:border-sky-400 disabled:opacity-50 text-sky-700 font-bold py-5 rounded-2xl transition-all"
+              >
+                {step === 'generating' && generationType === 'fiche' ? (
+                  <><Spinner /> Génération…</>
+                ) : (
+                  <>
+                    <span className="text-2xl">📋</span>
+                    <span>Générer une fiche de révision</span>
+                    <span className="text-xs font-medium text-sky-500">l&apos;essentiel en 5 min</span>
                   </>
                 )}
               </button>

@@ -1,19 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateControlePdf } from '@/lib/pdf/generate'
+import { generateControlePdf, generateFichePdf } from '@/lib/pdf/generate'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { content, fillable, meta } = body
+    const { content, fillable, meta, type } = body
 
-    if (!content || !meta) {
+    if (!content) {
+      return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 })
+    }
+
+    // Fiche de révision — rendu propre et imprimable
+    if (type === 'fiche') {
+      const pdfBytes = await generateFichePdf(content, { niveau: meta?.niveau ?? '' })
+      return new NextResponse(Buffer.from(pdfBytes), {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': 'attachment; filename="brio-fiche-revision.pdf"',
+        },
+      })
+    }
+
+    // Contrôle (par défaut)
+    if (!meta) {
       return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 })
     }
 
     const pdfBytes = await generateControlePdf(content, meta, !!fillable)
-    const buffer = Buffer.from(pdfBytes)
-
-    return new NextResponse(buffer, {
+    return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="brio-controle${fillable ? '-interactif' : ''}.pdf"`,

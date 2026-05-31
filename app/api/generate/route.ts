@@ -36,6 +36,40 @@ CONSIGNES :
 
 Format de réponse en Markdown bien structuré.`
 
+    } else if (type === 'fiche') {
+      prompt = `Tu es un professeur du système éducatif français pour le niveau ${niveau || 'lycée'}.
+
+À partir du cours suivant, rédige une FICHE DE RÉVISION synthétique, lisible en 5 minutes maximum.
+
+COURS :
+${courseText}
+
+Réponds UNIQUEMENT en Markdown, en respectant EXACTEMENT cette structure (utilise ces titres précis) :
+
+# [Titre de la leçon]
+
+## Points clés
+Liste à puces de 5 à 7 notions essentielles à retenir. Chaque puce est COURTE (une ligne).
+
+## Définitions importantes
+Les termes clés, chacun en gras suivi de sa définition en une seule ligne. Exemple :
+- **Terme** : définition courte et claire.
+
+## À retenir absolument
+2 à 3 règles ou formules incontournables. Mets CHACUNE sur une ligne de citation (commence la ligne par "> ") pour qu'elle soit encadrée.
+
+## Exemples
+2 à 3 exemples concrets et faciles à mémoriser, en puces.
+
+## Astuce mémoire
+Un seul moyen mnémotechnique ou une astuce simple pour retenir l'essentiel.
+
+RÈGLES :
+- Reste synthétique : on doit pouvoir lire la fiche en 5 minutes.
+- Pas d'émojis. Markdown propre (titres ##, puces -, gras ** pour les termes).
+- Adapte le vocabulaire au niveau ${niveau || 'lycée'}.
+- Commence directement par le titre, sans phrase d'introduction.`
+
     } else if (type === 'controle') {
       const dureeLabel = duree === '30min' ? '30 minutes' :
                          duree === '1h' ? '1 heure' :
