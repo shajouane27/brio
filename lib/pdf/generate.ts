@@ -88,6 +88,27 @@ function parseContent(raw: string): Line[] {
       continue
     }
 
+    // Cadre de schéma (caractères de dessin) → ligne vide
+    if (/[┌┐└┘├┤┬┴┼│─]/.test(line)) {
+      lines.push({ kind: 'text', text: '' })
+      continue
+    }
+
+    // Tableau Markdown → texte en colonnes (les cellules vides deviennent un espace à remplir)
+    if (/^\|.*\|$/.test(line)) {
+      if (/^\|[\s:|-]+\|$/.test(line)) { lines.push({ kind: 'separator' }); continue }
+      const cells = line.replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => stripMd(c.trim()) || '____')
+      lines.push({ kind: 'text', text: cells.join('      ') })
+      continue
+    }
+
+    // Case à cocher (QCM)
+    const cbMatch = line.match(/^(?:□|☐|◻|\[\s?\]|-\s*\[\s?\])\s*(.*)$/)
+    if (cbMatch) {
+      lines.push({ kind: 'text', text: '[  ]  ' + stripMd(cbMatch[1]) })
+      continue
+    }
+
     // Title: # or ##
     if (/^#{1,2}\s/.test(line)) {
       lines.push({ kind: 'title', text: stripMd(line) })

@@ -101,45 +101,85 @@ PARAMÈTRES :
 
 N'inclus PAS d'en-tête Nom/Prénom/Date/Note : il est ajouté automatiquement. Commence directement par le titre.
 
-Réponds UNIQUEMENT en texte, UNE SEULE chose par ligne, en respectant SCRUPULEUSEMENT ces règles de mise en page (c'est un vrai contrôle d'école, lisible par un enfant) :
+Tu dois DÉTECTER le type de chaque question et appliquer le format EXACT correspondant ci-dessous. Réponds en texte/Markdown, UNE SEULE chose par ligne.
 
-1. TITRE — première ligne, titre de niveau 1 avec la matière et la durée :
-# Contrôle de [Matière] — Durée : ${dureeLabel}
+STRUCTURE GÉNÉRALE :
+- Première ligne : le titre, en niveau 1 : "# Contrôle de [Matière] — Durée : ${dureeLabel}"
+- Puis une consigne courte en italique sur sa propre ligne (ex : *Lis bien chaque question.*).
+- Parties en chiffres romains, en niveau 2 : "## I. [Titre de la partie] (… points)".
+- Sous-questions numérotées (1., 2., 3.), chacune sur SA PROPRE LIGNE, avec son barème à la fin : "(2 pts)".
 
-2. Une CONSIGNE courte en italique sur sa propre ligne (ex : *Lis bien chaque question. Soigne ton écriture.*).
+FORMATS PAR TYPE DE QUESTION (à choisir selon la question) :
 
-3. PARTIES — chaque partie commence par un titre en chiffres romains, avec le total de points :
-## I. [Titre de la partie] (… points)
+• QCM — une option par ligne, commençant par une case à cocher :
+□ A. Réponse A
+□ B. Réponse B
+□ C. Réponse C
+□ D. Réponse D
 
-4. QUESTIONS — chaque question sur SA PROPRE LIGNE, numérotée (1., 2., 3.), avec son barème entre parenthèses à la fin. JAMAIS deux questions sur la même ligne.
+• TEXTE À TROUS — une phrase par ligne, JAMAIS deux trous sur la même ligne, le trou en pointillés :
+La photosynthèse permet aux plantes de produire de la ..................
+grâce à la lumière du ..................
 
-5. ESPACES DE RÉPONSE — sous CHAQUE question, mets une ou plusieurs lignes de réponse, CHACUNE sur sa propre ligne, faites de pointillés longs :
-.................................................................
-
-6. Laisse TOUJOURS une LIGNE VIDE entre deux questions, pour aérer.
-
-7. CONJUGAISON — si tu demandes de conjuguer, mets CHAQUE personne sur sa propre ligne avec ses pointillés. Exemple EXACT à reproduire :
-Je .................................................................
-Tu .................................................................
-Il / Elle .................................................................
-Nous .................................................................
-Vous .................................................................
+• CONJUGAISON — UNE personne par ligne, obligatoirement :
+Je    .................................................................
+Tu    .................................................................
+Il / Elle  .................................................................
+Nous  .................................................................
+Vous  .................................................................
 Ils / Elles .................................................................
 
-8. TEXTES À TROUS — mets CHAQUE phrase sur sa propre ligne, avec les pointillés à l'emplacement du trou.
+• CALCUL / PHYSIQUE / CHIMIE — étapes structurées, chacune avec son espace :
+Données :
+.................................................................
+Formule utilisée :
+.................................................................
+Application numérique :
+.................................................................
+Résultat :
+.................................................................
 
-RÈGLES GÉNÉRALES :
-- JAMAIS plusieurs réponses sur la même ligne : TOUJOURS une réponse par ligne.
+• RÉDACTION / DÉVELOPPEMENT — plusieurs lignes de pointillés (minimum 8 lignes pour le lycée, 4 pour le primaire), chacune sur sa propre ligne.
+
+• TABLEAU À COMPLÉTER — un vrai tableau Markdown avec des cellules vides à remplir :
+| Colonne 1 | Colonne 2 | Colonne 3 |
+|---|---|---|
+|  |  |  |
+|  |  |  |
+
+• SCHÉMA / GRAPHIQUE — une étiquette puis un grand cadre vide :
+[ Espace réservé au schéma — à réaliser sur cette feuille ]
+┌─────────────────────────────────────────────────┐
+│                                                  │
+│                                                  │
+│                                                  │
+└─────────────────────────────────────────────────┘
+
+RÈGLES GLOBALES OBLIGATOIRES :
+- Une question par ligne minimum ; une réponse par ligne — JAMAIS deux réponses côte à côte.
+- Une LIGNE VIDE entre chaque question.
+- Barème visible après chaque question.
 - Le total des points correspond EXACTEMENT à la notation (${notationLabel}).
-- 2 à 4 parties (I, II, III…), de la plus simple à la plus complexe.
-- Adapte la quantité de questions à la durée (${dureeLabel}).
-- Aucun émoji. Pas de gras inutile. Reste sobre et scolaire.
-- Aucune introduction ni commentaire : commence directement par le titre.`
+- Titre centré, parties en chiffres romains, sous-questions numérotées.
+- Aucun émoji, pas de gras inutile, aucune introduction ni commentaire.
+
+ADAPTATION AU NIVEAU (${niveau || 'lycée'}) :
+- CP à CM2 : phrases courtes, beaucoup d'espace, maximum 10 questions.
+- 6ème à 3ème : format collège standard, 3 parties maximum, durée respectée (${dureeLabel}).
+- 2nde à Terminale : format lycée complet, questions longues, calculs avec étapes, rédactions développées.
+
+ADAPTATION À LA MATIÈRE (détecte-la depuis le cours) :
+- Français : conjugaison, dictée, rédaction, questions de compréhension.
+- Maths : calculs avec étapes, problèmes, géométrie avec espace de schéma.
+- Physique-Chimie : données, formules, application numérique, unités obligatoires.
+- Histoire-Géo : questions de cours, analyse de document, rédaction.
+- SVT : schémas légendés, QCM, questions de cours.
+- Langues vivantes : traduction, texte à trous, compréhension, rédaction.`
     }
 
     const message = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 4096,
+      max_tokens: type === 'controle' ? 8000 : 4096,
       messages: [
         {
           role: 'user',
