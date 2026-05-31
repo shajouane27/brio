@@ -1,8 +1,12 @@
 import type { Metadata, Viewport } from 'next'
-import { Geist } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import './globals.css'
 
-const geist = Geist({ subsets: ['latin'] })
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Brio – Prépare tes examens',
@@ -28,8 +32,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr" className="h-full">
-      <body className={`${geist.className} min-h-full antialiased bg-slate-50`}>
+    <html lang="fr" className={`h-full ${inter.variable}`}>
+      <body className="min-h-full antialiased bg-[#FAFAF9] text-slate-900 font-sans">
         {children}
       </body>
     </html>
