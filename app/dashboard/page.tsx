@@ -6,6 +6,7 @@ import HistoriqueList from '@/components/dashboard/HistoriqueList'
 import ProgressionChart from '@/components/dashboard/ProgressionChart'
 import ParentDashboard from '@/components/dashboard/ParentDashboard'
 import FlashQuestions, { type FlashCard } from '@/components/FlashQuestions'
+import FlashBackfillButton from '@/components/FlashBackfillButton'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -105,6 +106,12 @@ export default async function DashboardPage() {
     .limit(5)
   const flashCards = (flashRows ?? []) as FlashCard[]
   const flashStreak: number = profile?.flash_streak ?? 0
+
+  // A-t-il des cours analysés ? (pour distinguer "aucun cours" de "cours sans questions")
+  const { count: coursCount } = await supabase
+    .from('cours')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
 
   // ── Stats rapides ──────────────────────────────────────────────────────────
   const notes = allControles
@@ -207,6 +214,8 @@ export default async function DashboardPage() {
           </div>
           {flashCards.length > 0 ? (
             <FlashQuestions cards={flashCards} initialStreak={flashStreak} />
+          ) : (coursCount ?? 0) > 0 ? (
+            <FlashBackfillButton />
           ) : (
             <div className="rounded-3xl border border-dashed border-accent-200 bg-accent-50/40 p-8 text-center">
               <div className="mx-auto w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-3xl mb-3 shadow-sm">⚡</div>
