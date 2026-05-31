@@ -14,6 +14,8 @@ const MAX_PHOTOS = 10
 
 interface UploadClientProps {
   niveau: string
+  /** Si fourni (réutilisation d'un cours sauvegardé), on démarre à l'étape 2. */
+  initialCourseText?: string
 }
 
 // Prépare un fichier : conversion JPEG + création de la preview
@@ -26,11 +28,11 @@ async function prepareFile(file: File): Promise<PhotoItem> {
   }
 }
 
-export default function UploadClient({ niveau }: UploadClientProps) {
-  const [step, setStep] = useState<Step>('upload')
+export default function UploadClient({ niveau, initialCourseText }: UploadClientProps) {
+  const [step, setStep] = useState<Step>(initialCourseText ? 'extracted' : 'upload')
   const [photos, setPhotos] = useState<PhotoItem[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
-  const [courseText, setCourseText] = useState('')
+  const [courseText, setCourseText] = useState(initialCourseText ?? '')
   const [generatedContent, setGeneratedContent] = useState('')
   const [generationType, setGenerationType] = useState<'exercices' | 'controle' | null>(null)
   const [showControleModal, setShowControleModal] = useState(false)
@@ -124,6 +126,15 @@ export default function UploadClient({ niveau }: UploadClientProps) {
       if (!res.ok) throw new Error(data.error || `Erreur serveur (${res.status})`)
       setCourseText(data.text ?? '')
       setStep('extracted')
+
+      // Sauvegarde automatique du cours dans la bibliothèque (en arrière-plan)
+      if (data.text) {
+        fetch('/api/save-cours', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contenu: data.text, niveau }),
+        }).catch(() => { /* silencieux : ne bloque pas l'élève */ })
+      }
     } catch (e) {
       clearTimeout(timeoutId)
       if (e instanceof Error && e.name === 'AbortError') {
@@ -353,7 +364,9 @@ export default function UploadClient({ niveau }: UploadClientProps) {
               <h2 className="font-bold text-slate-900 flex items-center gap-2">
                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-100 text-brand-700">📄</span>
                 Contenu extrait
-                <span className="text-xs font-medium text-slate-400">· {photos.length} page{photos.length > 1 ? 's' : ''}</span>
+                {photos.length > 0 && (
+                  <span className="text-xs font-medium text-slate-400">· {photos.length} page{photos.length > 1 ? 's' : ''}</span>
+                )}
               </h2>
               <button
                 onClick={handleReset}

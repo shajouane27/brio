@@ -52,6 +52,7 @@ export default function Navbar({ prenom, profileType }: NavbarProps) {
           <div className="hidden sm:flex items-center gap-1">
             <NavLink href="/dashboard" label="Accueil" />
             <NavLink href="/upload" label="Analyser un cours" />
+            <NavLink href="/cours" label="Mes cours" />
           </div>
         )}
 
@@ -85,7 +86,10 @@ export default function Navbar({ prenom, profileType }: NavbarProps) {
               <div className="py-1">
                 <MenuItem href="/dashboard" icon="🏠" label="Accueil" onClick={() => setMenuOpen(false)} />
                 {!isParent && (
-                  <MenuItem href="/parametres" icon="⚙️" label="Paramètres" onClick={() => setMenuOpen(false)} />
+                  <>
+                    <MenuItem href="/cours" icon="📚" label="Mes cours" onClick={() => setMenuOpen(false)} />
+                    <MenuItem href="/parametres" icon="⚙️" label="Paramètres" onClick={() => setMenuOpen(false)} />
+                  </>
                 )}
               </div>
 
