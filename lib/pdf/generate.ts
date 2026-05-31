@@ -34,15 +34,46 @@ function wrapText(text: string, font: PDFFont, size: number, maxWidth: number): 
   return lines.length ? lines : ['']
 }
 
+/**
+ * Rend le texte encodable par les polices standard (WinAnsi).
+ * pdf-lib plante sur les caractères hors WinAnsi (→, ≤, ≠, π, exposants…).
+ * On mappe les symboles courants vers de l'ASCII, puis on retire le reste.
+ */
+function sanitizePdfText(s: string): string {
+  return s
+    .replace(/[‘’‚‛]/g, "'")        // guillemets simples courbes
+    .replace(/[“”„‟]/g, '"')        // guillemets doubles courbes
+    .replace(/[–—―]/g, '-')              // tirets longs
+    .replace(/…/g, '...')                          // points de suspension
+    .replace(/[     ]/g, ' ')  // espaces insécables/fines
+    .replace(/[•●◦⁃∙]/g, '-')  // puces
+    .replace(/[→⇒➜➡➔]/g, '->') // flèches droite
+    .replace(/[←⇐]/g, '<-')                   // flèches gauche
+    .replace(/↔/g, '<->')
+    .replace(/≤/g, '<=')
+    .replace(/≥/g, '>=')
+    .replace(/≠/g, '!=')
+    .replace(/±/g, '+/-')
+    .replace(/[−]/g, '-')                          // signe moins maths
+    .replace(/[×⋅∗]/g, 'x')              // multiplication
+    .replace(/÷/g, '/')                            // division
+    .replace(/[√]/g, 'racine')                     // racine carrée
+    .replace(/π/g, 'pi')
+    // Retire tout ce qui n'est pas ASCII imprimable ou Latin-1 (WinAnsi-safe)
+    .replace(/[^\x09\x0A\x0D\x20-\x7E -ÿ]/g, '')
+}
+
 /** Strip light markdown: **bold**, *italic*, leading #/- */
 function stripMd(text: string): string {
-  return text
-    .replace(/^\s*#{1,6}\s*/, '')
-    .replace(/^\s*[-*]\s+/, '')
-    .replace(/\*\*(.*?)\*\*/g, '$1')
-    .replace(/\*(.*?)\*/g, '$1')
-    .replace(/`(.*?)`/g, '$1')
-    .trim()
+  return sanitizePdfText(
+    text
+      .replace(/^\s*#{1,6}\s*/, '')
+      .replace(/^\s*[-*]\s+/, '')
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .replace(/\*(.*?)\*/g, '$1')
+      .replace(/`(.*?)`/g, '$1')
+      .trim()
+  )
 }
 
 // ── parser ───────────────────────────────────────────────────────────────────
@@ -399,7 +430,7 @@ export async function generateFichePdf(
       ensure(18)
       page.drawCircle({ x: margin + 4, y: y + 3, size: 1.6, color: brand })
       if (def) {
-        const term = def[1].trim()
+        const term = stripMd(def[1].trim())
         const definition = stripMd(def[2].trim())
         const termLabel = definition ? `${term} : ` : term
         page.drawText(termLabel, { x: margin + 14, y, size: 10, font: bold, color: dark })
