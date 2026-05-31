@@ -44,32 +44,27 @@ export default function PdfDownloadButtons({ content, meta }: PdfDownloadButtons
   }
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Télécharger le contrôle</p>
-      <div className="grid grid-cols-2 gap-2">
+    <div className="space-y-2.5">
+      <p className="text-sm font-bold text-slate-700 flex items-center gap-2">
+        <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-brand-100 text-brand-700">⬇️</span>
+        Télécharger le contrôle
+      </p>
+      <div className="grid grid-cols-2 gap-2.5">
         <button
           onClick={() => download(false)}
           disabled={loadingPrint || loadingFill}
-          className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium disabled:opacity-50 transition-colors"
+          className="flex items-center justify-center gap-1.5 px-3 py-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 text-sm font-semibold disabled:opacity-50 transition-all"
         >
-          {loadingPrint ? (
-            <Spinner />
-          ) : (
-            <span>🖨️</span>
-          )}
+          {loadingPrint ? <Spinner /> : <span>🖨️</span>}
           Version imprimable
         </button>
 
         <button
           onClick={() => download(true)}
           disabled={loadingPrint || loadingFill}
-          className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium disabled:opacity-50 transition-colors"
+          className="flex items-center justify-center gap-1.5 px-3 py-3 rounded-xl border border-brand-200 bg-brand-50 hover:bg-brand-100 hover:border-brand-300 text-brand-700 text-sm font-semibold disabled:opacity-50 transition-all"
         >
-          {loadingFill ? (
-            <Spinner />
-          ) : (
-            <span>💻</span>
-          )}
+          {loadingFill ? <Spinner /> : <span>💻</span>}
           Version interactive
         </button>
       </div>

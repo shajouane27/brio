@@ -24,8 +24,7 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
   }
 
   const isControle = type === 'controle'
-  const accentColor = isControle ? 'indigo' : 'emerald'
-  const title = isControle ? '📋 Contrôle type généré' : '✏️ Exercices générés'
+  const title = isControle ? 'Contrôle type généré' : 'Exercices générés'
 
   if (showCorrection && isControle && controleOptions) {
     return (
@@ -42,14 +41,20 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
   return (
     <div className="space-y-4">
       {/* Main content card */}
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div className={`px-6 py-4 border-b border-slate-100 flex items-center justify-between ${isControle ? 'bg-indigo-50' : 'bg-emerald-50'}`}>
-          <h2 className={`font-semibold flex items-center gap-2 ${isControle ? 'text-indigo-900' : 'text-emerald-900'}`}>
-            {title}
-          </h2>
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+        <div className={`px-6 py-5 flex items-center justify-between text-white bg-gradient-to-r ${isControle ? 'from-brand-600 to-brand-700' : 'from-emerald-500 to-emerald-600'}`}>
+          <div className="flex items-center gap-3">
+            <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/20 text-xl">
+              {isControle ? '📋' : '✏️'}
+            </span>
+            <div>
+              <h2 className="font-bold text-lg leading-tight">{title}</h2>
+              <p className="text-xs text-white/80 mt-0.5">Niveau {niveau}</p>
+            </div>
+          </div>
           <button
             onClick={handleCopy}
-            className={`text-sm font-medium px-3 py-1.5 rounded-lg transition-colors ${isControle ? 'text-indigo-600 hover:bg-indigo-100' : 'text-emerald-600 hover:bg-emerald-100'}`}
+            className="text-sm font-semibold px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors shrink-0"
           >
             {copied ? '✓ Copié !' : 'Copier'}
           </button>
@@ -62,7 +67,7 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
 
       {/* PDF download — contrôle only */}
       {isControle && controleOptions && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
           <PdfDownloadButtons
             content={content}
             meta={{ niveau, duree: controleOptions.duree, notation: controleOptions.notation }}
@@ -74,25 +79,25 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
       {isControle && (
         <button
           onClick={() => setShowCorrection(true)}
-          className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3.5 rounded-xl transition-colors"
+          className="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white font-bold py-4 rounded-2xl shadow-md shadow-accent-500/25 hover:shadow-lg hover:-translate-y-0.5 transition-all text-base"
         >
-          📸 Corriger ma copie
+          <span className="text-xl">📸</span> Corriger ma copie
         </button>
       )}
 
       {/* Nav buttons */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 pt-1">
         <button
           onClick={onBack}
-          className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-medium hover:bg-slate-50 transition-colors text-sm"
+          className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-colors text-sm"
         >
           ← Retour
         </button>
         <button
           onClick={onReset}
-          className={`flex-1 py-3 rounded-xl text-white font-semibold transition-colors text-sm ${isControle ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+          className={`flex-1 py-3 rounded-xl text-white font-semibold transition-colors text-sm ${isControle ? 'bg-brand-600 hover:bg-brand-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
         >
-          Nouveau cours
+          ✨ Nouveau cours
         </button>
       </div>
     </div>
@@ -116,8 +121,8 @@ function FormattedContent({ content }: { content: string }) {
         }
         if (/^(I{1,3}|IV|V|VI{0,3}|IX|X)\.\s/i.test(line)) {
           return (
-            <div key={i} className="mt-4 mb-2 px-3 py-1.5 bg-slate-100 rounded-lg">
-              <span className="font-bold text-slate-800 text-sm">{line}</span>
+            <div key={i} className="mt-4 mb-2 px-3 py-2 bg-brand-50 border-l-4 border-brand-400 rounded-r-lg">
+              <span className="font-bold text-brand-800 text-sm">{line}</span>
             </div>
           )
         }
