@@ -136,7 +136,7 @@ export default async function DashboardPage() {
         </section>
 
         {/* ── Accès rapides / stats ───────────────────────────────────────── */}
-        <section className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <section className="grid grid-cols-2 gap-4">
           {allControles.length > 0 ? (
             <>
               <StatCard
@@ -179,20 +179,6 @@ export default async function DashboardPage() {
               </div>
             </>
           )}
-
-          {/* Nouveau cours — carte pleine avec icône moderne */}
-          <Link
-            href="/upload"
-            className="group flex flex-col items-start justify-center gap-2 rounded-2xl bg-brand-600 hover:bg-brand-700 p-5 shadow-md shadow-brand-600/20 hover:shadow-lg hover:-translate-y-0.5 transition-all col-span-2 sm:col-span-1"
-          >
-            <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/15 text-white group-hover:scale-105 transition-transform">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-            </span>
-            <span className="font-bold text-white">Nouveau cours</span>
-            <span className="text-xs text-white/70">Générer des exercices</span>
-          </Link>
         </section>
 
         {/* ── Progression ─────────────────────────────────────────────────── */}
