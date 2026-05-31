@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar'
 import HistoriqueList from '@/components/dashboard/HistoriqueList'
 import ProgressionChart from '@/components/dashboard/ProgressionChart'
 import ParentDashboard from '@/components/dashboard/ParentDashboard'
+import FlashQuestions, { type FlashCard } from '@/components/FlashQuestions'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -94,6 +95,17 @@ export default async function DashboardPage() {
 
   const allControles = controles ?? []
 
+  // ── Questions flash du jour (les 5 moins récemment vues) ───────────────────
+  const { data: flashRows } = await supabase
+    .from('flash_cards')
+    .select('id, type, question, options, reponse')
+    .eq('user_id', user.id)
+    .order('derniere_vue', { ascending: true, nullsFirst: true })
+    .order('niveau_maitrise', { ascending: true })
+    .limit(5)
+  const flashCards = (flashRows ?? []) as FlashCard[]
+  const flashStreak: number = profile?.flash_streak ?? 0
+
   // ── Stats rapides ──────────────────────────────────────────────────────────
   const notes = allControles
     .map((c) => c.note_sur_20)
@@ -178,6 +190,35 @@ export default async function DashboardPage() {
                 </div>
               </div>
             </>
+          )}
+        </section>
+
+        {/* ── Questions du jour ───────────────────────────────────────────── */}
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-bold text-slate-900 text-lg flex items-center gap-2">
+              <span>⚡</span> Questions du jour
+            </h2>
+            {flashStreak > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-sm font-bold text-accent-700 bg-accent-50 border border-accent-100 px-3 py-1 rounded-full">
+                🔥 {flashStreak} jour{flashStreak > 1 ? 's' : ''}
+              </span>
+            )}
+          </div>
+          {flashCards.length > 0 ? (
+            <FlashQuestions cards={flashCards} initialStreak={flashStreak} />
+          ) : (
+            <div className="rounded-3xl border border-dashed border-accent-200 bg-accent-50/40 p-8 text-center">
+              <div className="mx-auto w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-3xl mb-3 shadow-sm">⚡</div>
+              <p className="font-bold text-slate-800">Analyse ton premier cours pour débloquer les questions flash&nbsp;!</p>
+              <p className="text-sm text-slate-500 mt-1">Chaque cours analysé génère automatiquement des questions de révision.</p>
+              <Link
+                href="/upload"
+                className="inline-flex items-center gap-2 mt-4 bg-accent-500 hover:bg-accent-600 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
+              >
+                ✨ Analyser un cours
+              </Link>
+            </div>
           )}
         </section>
 
