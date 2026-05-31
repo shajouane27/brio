@@ -8,6 +8,7 @@ import ControleTimer from './ControleTimer'
 import ControleView from './ControleView'
 import ExercicesPlayer, { type Exercice } from './ExercicesPlayer'
 import ControleFiller from './ControleFiller'
+import DicteeMode from './DicteeMode'
 import { type RegenFn } from './RegenButtons'
 import Illustrations, { type Illustration } from './Illustrations'
 import SvgFigures from './SvgFigures'
@@ -27,12 +28,15 @@ interface ResultPanelProps {
 }
 
 const GEO_MATIERES = ['Histoire-Géographie', 'Histoire', 'Géographie']
+const PRIMAIRE = ['CP', 'CE1', 'CE2', 'CM1', 'CM2']
 
 export default function ResultPanel({ content, type, niveau, exercices, controleOptions, illustrations, onReset, onBack, onRegenerate }: ResultPanelProps) {
   const [copied, setCopied] = useState(false)
   const [showCorrection, setShowCorrection] = useState(false)
   const [showFiller, setShowFiller] = useState(false)
+  const [showDictee, setShowDictee] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
+  const isPrimaire = PRIMAIRE.some((n) => niveau.includes(n))
 
   async function handleCopy() {
     await navigator.clipboard.writeText(content)
@@ -98,6 +102,18 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
         niveau={niveau}
         onClose={() => setShowFiller(false)}
         onRegenerate={onRegenerate}
+      />
+    )
+  }
+
+  if (showDictee && isControle && controleOptions) {
+    return (
+      <DicteeMode
+        controleContent={body.text}
+        notation={controleOptions.notation}
+        duree={controleOptions.duree}
+        niveau={niveau}
+        onClose={() => setShowDictee(false)}
       />
     )
   }
@@ -200,6 +216,16 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
             <span className="text-xl">📸</span> Corriger ma copie
           </button>
         </div>
+      )}
+
+      {/* Mode dictée — élèves du primaire (CP → CM2) uniquement */}
+      {isControle && isPrimaire && (
+        <button
+          onClick={() => setShowDictee(true)}
+          className="w-full flex items-center justify-center gap-2.5 bg-white border-2 border-accent-300 hover:bg-accent-50 text-accent-700 font-bold py-4 rounded-2xl transition-all"
+        >
+          <span className="text-xl">🎤</span> Mode dictée
+        </button>
       )}
 
       {/* Nav buttons */}

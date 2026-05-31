@@ -13,14 +13,17 @@ interface AnswerItem { numero: string; question: string; bareme: string; reponse
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { controleContent, notation, niveau, answers } = body as {
+    const { controleContent, notation, niveau, answers, copieLibre } = body as {
       controleContent: string
       notation: string
       niveau: string
-      answers: AnswerItem[]
+      answers?: AnswerItem[]
+      copieLibre?: string
     }
 
-    if (!controleContent || !Array.isArray(answers) || !answers.length) {
+    const hasAnswers = Array.isArray(answers) && answers.length > 0
+    const hasCopieLibre = typeof copieLibre === 'string' && copieLibre.trim().length > 0
+    if (!controleContent || (!hasAnswers && !hasCopieLibre)) {
       return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 })
     }
 
@@ -29,9 +32,11 @@ export async function POST(request: NextRequest) {
       notation === '/100' ? 'sur 100 points' :
       'par lettres (A=excellent, B=bien, C=assez bien, D=passable, E=insuffisant)'
 
-    const copie = answers
-      .map((a) => `Question ${a.numero}${a.bareme ? ` (${a.bareme})` : ''} : ${a.question}\nRéponse de l'élève : ${a.reponse?.trim() ? a.reponse.trim() : 'Sans réponse'}`)
-      .join('\n\n')
+    const copie = hasAnswers
+      ? answers!
+          .map((a) => `Question ${a.numero}${a.bareme ? ` (${a.bareme})` : ''} : ${a.question}\nRéponse de l'élève : ${a.reponse?.trim() ? a.reponse.trim() : 'Sans réponse'}`)
+          .join('\n\n')
+      : `Réponses dictées à l'oral par l'élève (transcription) :\n${copieLibre!.trim()}`
 
     const message = await anthropic.messages.create({
       model: CLAUDE_MODEL,
