@@ -2,44 +2,92 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { useState, useRef, useEffect, useMemo } from 'react'
-import CorrectionPanel from './CorrectionPanel'
-import CorrectionResultView, { type CorrectionResult } from './CorrectionResultView'
+import { useState, useRef, useEffect } from 'react'
+import { toJpeg, isImageFile } from '@/lib/image'
 
 interface Props {
-  controleContent: string
-  notation: string
+  courseText: string
   niveau: string
-  duree?: string
   onClose: () => void
 }
 
-// Découpe le sujet en phrases lisibles (sans pointillés, tableaux, barèmes…).
-function speechUnits(content: string): string[] {
-  return content.split('\n').map((l) => l.trim())
-    .filter((l) => l && l !== '---')
-    .filter((l) => !/^[.…_]{4,}$/.test(l))
-    .filter((l) => !/^[|┌┐└┘├┤┬┴┼│─]/.test(l))
-    .filter((l) => !/^\|?[\s:|-]+$/.test(l))
-    .map((l) => l
-      .replace(/[#*>_`|□☐◻]/g, '')
-      .replace(/\(\s*\d+\s*pts?\s*\)/gi, '')
-      .replace(/\.{4,}/g, ' ')
-      .trim())
-    .filter(Boolean)
+interface MotCorrige {
+  mot: string
+  correct: boolean
+  correction: string
+  regle: string
+}
+interface DicteeResult {
+  note_finale: string
+  appreciation: string
+  mots: MotCorrige[]
 }
 
 function getSynth(): SpeechSynthesis | null {
   return typeof window !== 'undefined' ? window.speechSynthesis : null
 }
 
-export default function DicteeMode({ controleContent, notation, niveau, duree, onClose }: Props) {
-  const units = useMemo(() => speechUnits(controleContent), [controleContent])
+// Découpe le texte en phrases.
+function toSentences(text: string): string[] {
+  return text
+    .replace(/\n+/g, ' ')
+    .split(/(?<=[.!?…])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+function Spinner() {
+  return (
+    <svg className="animate-spin h-5 w-5 inline" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  )
+}
+
+export default function DicteeMode({ courseText, niveau, onClose }: Props) {
+  const [phase, setPhase] = useState<'loading' | 'reading' | 'photo' | 'correcting' | 'done'>('loading')
+  const [dictee, setDictee] = useState('')
+  const [error, setError] = useState('')
+
+  // Lecture
+  const sentencesRef = useRef<string[]>([])
   const [idx, setIdx] = useState(0)
-  const [readState, setReadState] = useState<'idle' | 'playing' | 'paused'>('idle')
+  const [readState, setReadState] = useState<'idle' | 'playing' | 'paused' | 'finished'>('idle')
+  const idxRef = useRef(0)
+  const pausedRef = useRef(false)
+  const gapRef = useRef<number | undefined>(undefined)
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null)
 
-  const [mode, setMode] = useState<'menu' | 'photo' | 'voice'>('menu')
+  // Photo + correction
+  const [preview, setPreview] = useState<string | null>(null)
+  const [file, setFile] = useState<File | null>(null)
+  const [result, setResult] = useState<DicteeResult | null>(null)
+  const galleryRef = useRef<HTMLInputElement>(null)
+  const cameraRef = useRef<HTMLInputElement>(null)
+
+  // 1) Génère la dictée
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/dictee', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ courseText, niveau }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return
+        if (d.text) {
+          setDictee(d.text)
+          sentencesRef.current = toSentences(d.text)
+          setPhase('reading')
+        } else {
+          setError(d.error || 'Génération impossible')
+        }
+      })
+      .catch(() => { if (!cancelled) setError('Erreur de génération de la dictée') })
+    return () => { cancelled = true; getSynth()?.cancel() }
+  }, [courseText, niveau])
 
   // Voix française
   useEffect(() => {
@@ -51,215 +99,246 @@ export default function DicteeMode({ controleContent, notation, niveau, duree, o
     }
     pick()
     synth.onvoiceschanged = pick
-    return () => { synth.cancel() }
   }, [])
 
-  function speakFrom(i: number) {
+  function clearGap() { if (gapRef.current) { clearTimeout(gapRef.current); gapRef.current = undefined } }
+
+  // Lit la phrase i, puis pause naturelle de 3 s avant la suivante
+  function speak(i: number) {
     const synth = getSynth()
-    if (!synth || !units[i]) return
+    const sentences = sentencesRef.current
+    if (!synth || !sentences[i]) return
+    clearGap()
     synth.cancel()
+    idxRef.current = i
     setIdx(i)
+    pausedRef.current = false
     setReadState('playing')
-    const u = new SpeechSynthesisUtterance(units[i])
+    const u = new SpeechSynthesisUtterance(sentences[i])
     u.lang = 'fr-FR'
     u.rate = 0.8
     u.pitch = 1.1
     if (voiceRef.current) u.voice = voiceRef.current
     u.onend = () => {
-      if (i + 1 < units.length) speakFrom(i + 1)
-      else { setReadState('idle'); setIdx(0) }
+      if (pausedRef.current) return
+      if (i + 1 < sentences.length) {
+        gapRef.current = window.setTimeout(() => { if (!pausedRef.current) speak(i + 1) }, 3000)
+      } else {
+        setReadState('finished')
+      }
     }
     synth.speak(u)
   }
 
-  function play() {
-    const synth = getSynth()
-    if (!synth) return
-    if (readState === 'paused') { synth.resume(); setReadState('playing') }
-    else speakFrom(idx)
-  }
-  function pause() { const s = getSynth(); if (s) { s.pause(); setReadState('paused') } }
-  function repeat() { speakFrom(idx) }
-
-  // ── Correction par photo (réutilise le flux existant) ───────────────────────
-  if (mode === 'photo') {
-    return <CorrectionPanel controleContent={controleContent} notation={notation} duree={duree} niveau={niveau} onClose={() => setMode('menu')} />
+  function pause() { getSynth()?.cancel(); pausedRef.current = true; clearGap(); setReadState('paused') }
+  function resume() { speak(idxRef.current) }
+  function repeat() { speak(idxRef.current) }
+  function next() {
+    if (idxRef.current + 1 < sentencesRef.current.length) speak(idxRef.current + 1)
+    else { getSynth()?.cancel(); clearGap(); setReadState('finished') }
   }
 
-  if (mode === 'voice') {
-    return <VoiceAnswer controleContent={controleContent} notation={notation} niveau={niveau} duree={duree} onClose={() => setMode('menu')} />
+  // Photo
+  async function addFile(f: File) {
+    if (!isImageFile(f)) { setError('Choisis une image (photo de ta feuille).'); return }
+    setError('')
+    const jpeg = await toJpeg(f)
+    setFile(jpeg)
+    setPreview(URL.createObjectURL(jpeg))
+  }
+  function onInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0]
+    if (f) addFile(f)
+    e.target.value = ''
   }
 
-  // ── Menu : lecture à voix haute + choix ─────────────────────────────────────
-  return (
-    <div className="mt-6 space-y-5">
-      <div className="flex items-center gap-3 pb-4 border-b border-slate-200">
-        <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-lg shrink-0">←</button>
-        <div>
-          <h2 className="font-bold text-slate-900 flex items-center gap-2">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-accent-100 text-accent-700">🎤</span>
-            Mode dictée
-          </h2>
-          <p className="text-sm text-slate-500 mt-0.5">Écoute bien et écris sur ta feuille.</p>
-        </div>
-      </div>
-
-      {/* Lecture à voix haute */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm text-center">
-        <div className="text-5xl mb-3">{readState === 'playing' ? '🔊' : '🎧'}</div>
-        <p className="text-lg font-semibold text-slate-800 min-h-[3.5rem] flex items-center justify-center px-2">
-          {units[idx] || 'Appuie sur Écouter pour commencer.'}
-        </p>
-        {units.length > 0 && (
-          <p className="text-xs text-slate-400 mt-1">Phrase {idx + 1} / {units.length}</p>
-        )}
-
-        <div className="flex items-center justify-center gap-3 mt-5">
-          {readState !== 'playing' ? (
-            <button onClick={play} className="flex items-center gap-2 bg-accent-500 hover:bg-accent-600 text-white font-bold px-6 py-3 rounded-2xl shadow-sm transition-colors">
-              ▶️ {readState === 'paused' ? 'Reprendre' : 'Écouter'}
-            </button>
-          ) : (
-            <button onClick={pause} className="flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white font-bold px-6 py-3 rounded-2xl shadow-sm transition-colors">
-              ⏸️ Pause
-            </button>
-          )}
-          <button onClick={repeat} className="flex items-center gap-2 border border-slate-200 text-slate-600 font-semibold px-5 py-3 rounded-2xl hover:bg-slate-50 transition-colors">
-            🔁 Répéter
-          </button>
-        </div>
-      </div>
-
-      {/* Choix de la suite */}
-      <div>
-        <p className="text-sm font-semibold text-slate-500 mb-3 text-center">Quand tu as fini d&apos;écrire :</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button onClick={() => { getSynth()?.cancel(); setMode('photo') }} className="flex flex-col items-center gap-1 bg-white hover:bg-brand-50 border-2 border-brand-200 hover:border-brand-400 text-brand-700 font-bold py-5 rounded-2xl transition-all">
-            <span className="text-2xl">📸</span>
-            Photographier ma copie
-          </button>
-          <button onClick={() => { getSynth()?.cancel(); setMode('voice') }} className="flex flex-col items-center gap-1 bg-white hover:bg-accent-50 border-2 border-accent-200 hover:border-accent-400 text-accent-700 font-bold py-5 rounded-2xl transition-all">
-            <span className="text-2xl">🎤</span>
-            Dicter mes réponses
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Réponse dictée à l'oral ───────────────────────────────────────────────────
-function VoiceAnswer({ controleContent, notation, niveau, duree, onClose }: Props) {
-  const [transcript, setTranscript] = useState('')
-  const [listening, setListening] = useState(false)
-  const [recError, setRecError] = useState('')
-  const [phase, setPhase] = useState<'record' | 'correcting' | 'done'>('record')
-  const [result, setResult] = useState<CorrectionResult | null>(null)
-  const [saved, setSaved] = useState(false)
-  const recRef = useRef<any>(null)
-  const finalRef = useRef('')
-
-  function startListening() {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (!SR) {
-      setRecError("La reconnaissance vocale n'est pas disponible sur ce navigateur. Tu peux écrire tes réponses ci-dessous.")
-      return
-    }
-    const rec = new SR()
-    rec.lang = 'fr-FR'
-    rec.continuous = true
-    rec.interimResults = true
-    finalRef.current = transcript ? transcript + ' ' : ''
-    rec.onresult = (e: any) => {
-      let interim = ''
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript
-        if (e.results[i].isFinal) finalRef.current += t + ' '
-        else interim += t
-      }
-      setTranscript((finalRef.current + interim).trimStart())
-    }
-    rec.onend = () => setListening(false)
-    rec.onerror = () => setListening(false)
-    recRef.current = rec
-    rec.start()
-    setListening(true)
-  }
-
-  function stopListening() {
-    try { recRef.current?.stop() } catch { /* ignore */ }
-    setListening(false)
-  }
-
-  async function submit() {
+  async function correct() {
+    if (!file) return
     setPhase('correcting')
+    setError('')
     try {
-      const res = await fetch('/api/correct-copie', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ controleContent, notation, niveau, copieLibre: transcript }),
-      })
+      const fd = new FormData()
+      fd.append('image', file)
+      fd.append('dictee', dictee)
+      fd.append('niveau', niveau)
+      const res = await fetch('/api/correct-dictee', { method: 'POST', body: fd })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Erreur')
+      if (!res.ok) throw new Error(data.error)
       setResult(data.correction)
       setPhase('done')
-      fetch('/api/save-controle', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ controleContent, correction: data.correction, notation, duree }),
-      }).then((r) => { if (r.ok) setSaved(true) }).catch(() => {})
     } catch {
-      setPhase('record')
-      setRecError('La correction a échoué. Réessaie.')
+      setError('La correction a échoué. Réessaie.')
+      setPhase('photo')
     }
   }
 
-  if (phase === 'done' && result) {
+  function goPhoto() { getSynth()?.cancel(); clearGap(); setPhase('photo') }
+
+  // ── En-tête commun ──────────────────────────────────────────────────────────
+  const Header = (
+    <div className="flex items-center gap-3 pb-4 border-b border-slate-200">
+      <button onClick={() => { getSynth()?.cancel(); clearGap(); onClose() }} className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-lg shrink-0">←</button>
+      <h2 className="font-bold text-slate-900 flex items-center gap-2">
+        <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-accent-100 text-accent-700">🎤</span>
+        Mode dictée
+      </h2>
+    </div>
+  )
+
+  if (phase === 'loading') {
     return (
-      <div className="mt-6 space-y-4">
-        <CorrectionResultView result={result} saved={saved} />
+      <div className="mt-6 space-y-5">
+        {Header}
+        <div className="text-center py-10 text-slate-500">
+          <Spinner /> <span className="ml-2">Préparation de ta dictée…</span>
+        </div>
+        {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>}
+      </div>
+    )
+  }
+
+  // ── Lecture ─────────────────────────────────────────────────────────────────
+  if (phase === 'reading') {
+    const total = sentencesRef.current.length
+    return (
+      <div className="mt-6 space-y-5">
+        {Header}
+
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm text-center">
+          <div className="text-5xl mb-3">{readState === 'playing' ? '🔊' : '🎧'}</div>
+          <p className="text-xl font-bold text-slate-800">Écris ce que tu entends sur ta feuille ✏️</p>
+          <p className="text-sm text-slate-400 mt-1">Phrase {Math.min(idx + 1, total)} / {total}</p>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
+            {readState === 'idle' && (
+              <BigBtn onClick={() => speak(0)} tone="accent">▶ Commencer la dictée</BigBtn>
+            )}
+            {readState === 'playing' && (
+              <BigBtn onClick={pause} tone="slate">⏸ Pause</BigBtn>
+            )}
+            {readState === 'paused' && (
+              <BigBtn onClick={resume} tone="accent">▶ Reprendre</BigBtn>
+            )}
+            {(readState === 'playing' || readState === 'paused') && (
+              <>
+                <BigBtn onClick={repeat} tone="ghost">🔁 Répéter la phrase</BigBtn>
+                <BigBtn onClick={next} tone="ghost">⏭ Phrase suivante</BigBtn>
+              </>
+            )}
+          </div>
+
+          {readState === 'finished' && (
+            <p className="text-emerald-600 font-semibold mt-4">Dictée terminée ! 🎉</p>
+          )}
+        </div>
+
+        <button onClick={goPhoto} className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-2xl shadow-md transition-colors">
+          📸 Photographier ma dictée
+        </button>
+      </div>
+    )
+  }
+
+  // ── Photo ───────────────────────────────────────────────────────────────────
+  if (phase === 'photo' || phase === 'correcting') {
+    return (
+      <div className="mt-6 space-y-5">
+        {Header}
+        <input ref={galleryRef} type="file" accept="image/*" className="hidden" onChange={onInput} />
+        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onInput} />
+
+        <div
+          onClick={() => galleryRef.current?.click()}
+          className="border-2 border-dashed border-slate-300 hover:border-brand-300 rounded-3xl p-6 sm:p-8 text-center cursor-pointer transition-all"
+        >
+          {preview ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={preview} alt="Ma dictée" className="w-full max-h-60 object-contain rounded-2xl border border-slate-200 bg-white" />
+          ) : (
+            <div className="py-4">
+              <div className="text-4xl mb-2">📄</div>
+              <p className="font-bold text-slate-800 text-lg">Choisis la photo de ta dictée</p>
+            </div>
+          )}
+        </div>
+
+        <button onClick={() => cameraRef.current?.click()} className="w-full flex items-center justify-center gap-2.5 bg-accent-500 hover:bg-accent-600 text-white font-semibold py-4 rounded-2xl transition-all">
+          📷 Prendre une photo
+        </button>
+
+        {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>}
+
+        {preview && (
+          <button onClick={correct} disabled={phase === 'correcting'} className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold py-4 rounded-2xl shadow-md transition-colors">
+            {phase === 'correcting' ? <><Spinner /> Correction en cours…</> : '✓ Corriger ma dictée'}
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  // ── Résultat ────────────────────────────────────────────────────────────────
+  if (phase === 'done' && result) {
+    const fautes = result.mots.filter((m) => !m.correct)
+    return (
+      <div className="mt-6 space-y-5 animate-fade-in-up">
+        {Header}
+
+        {/* Note */}
+        <div className="rounded-3xl p-7 text-center text-white bg-gradient-to-br from-brand-500 to-brand-700 shadow-lg">
+          <div className="text-6xl font-extrabold tracking-tight">{result.note_finale}</div>
+          <p className="text-white/90 text-sm mt-3 max-w-sm mx-auto">{result.appreciation}</p>
+        </div>
+
+        {/* Texte corrigé mot par mot */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+          <h3 className="font-bold text-slate-900 mb-3">Ta dictée corrigée</h3>
+          <p className="leading-loose text-lg">
+            {result.mots.map((m, i) => (
+              m.correct ? (
+                <span key={i} className="text-emerald-600">{m.mot} </span>
+              ) : (
+                <span key={i} className="inline-flex flex-col items-center align-bottom mx-0.5">
+                  <span className="text-rose-500 line-through decoration-2">{m.mot}</span>
+                  <span className="text-emerald-700 font-semibold text-sm">{m.correction}</span>
+                </span>
+              )
+            ))}
+          </p>
+        </div>
+
+        {/* Règles des fautes */}
+        {fautes.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="font-bold text-slate-900">Pour progresser</h3>
+            {fautes.map((m, i) => (
+              <div key={i} className="bg-rose-50 border border-rose-100 rounded-xl px-4 py-3 text-sm">
+                <span className="text-rose-500 line-through">{m.mot}</span>
+                <span className="mx-2 text-slate-400">→</span>
+                <span className="text-emerald-700 font-semibold">{m.correction}</span>
+                {m.regle && <p className="text-slate-600 mt-1">{m.regle}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+
         <button onClick={onClose} className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition-colors text-sm">Terminer</button>
       </div>
     )
   }
 
+  return null
+}
+
+function BigBtn({ onClick, tone, children }: { onClick: () => void; tone: 'accent' | 'slate' | 'ghost'; children: React.ReactNode }) {
+  const cls = tone === 'accent'
+    ? 'bg-accent-500 hover:bg-accent-600 text-white'
+    : tone === 'slate'
+    ? 'bg-slate-700 hover:bg-slate-800 text-white'
+    : 'border border-slate-200 text-slate-600 hover:bg-slate-50'
   return (
-    <div className="mt-6 space-y-5">
-      <div className="flex items-center gap-3 pb-4 border-b border-slate-200">
-        <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-lg shrink-0">←</button>
-        <h2 className="font-bold text-slate-900">🎤 Dicter mes réponses</h2>
-      </div>
-
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm text-center">
-        <button
-          onClick={listening ? stopListening : startListening}
-          className={`inline-flex items-center gap-2 font-bold px-6 py-3.5 rounded-2xl shadow-sm transition-colors ${listening ? 'bg-rose-500 hover:bg-rose-600 text-white animate-pulse' : 'bg-accent-500 hover:bg-accent-600 text-white'}`}
-        >
-          {listening ? '⏹️ Arrêter' : '🎤 Parler'}
-        </button>
-        <p className="text-xs text-slate-400 mt-2">{listening ? 'Je t\'écoute…' : 'Appuie et parle. Tu pourras corriger ton texte ensuite.'}</p>
-      </div>
-
-      <div>
-        <label className="block text-sm font-semibold text-slate-600 mb-1.5">Ta réponse (tu peux la corriger) :</label>
-        <textarea
-          value={transcript}
-          onChange={(e) => setTranscript(e.target.value)}
-          rows={6}
-          placeholder="Ton texte apparaîtra ici…"
-          className="w-full px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-accent-400 text-sm text-slate-800"
-        />
-      </div>
-
-      {recError && <div className="bg-amber-50 border border-amber-200 text-amber-800 text-sm px-4 py-3 rounded-xl">{recError}</div>}
-
-      <button
-        onClick={submit}
-        disabled={!transcript.trim() || phase === 'correcting'}
-        className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold py-4 rounded-2xl shadow-sm transition-colors"
-      >
-        {phase === 'correcting' ? 'Correction en cours…' : '✓ Soumettre mes réponses'}
-      </button>
-    </div>
+    <button onClick={onClick} className={`flex items-center gap-2 font-bold px-5 py-3 rounded-2xl shadow-sm transition-colors ${cls}`}>
+      {children}
+    </button>
   )
 }

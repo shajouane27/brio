@@ -10,6 +10,9 @@ import { toJpeg, isImageFile } from '@/lib/image'
 import { type Exercice } from '@/components/ExercicesPlayer'
 import { type RegenFn } from '@/components/RegenButtons'
 import { type Illustration } from '@/components/Illustrations'
+import DicteeMode from '@/components/DicteeMode'
+
+const PRIMAIRE = ['CP', 'CE1', 'CE2', 'CM1', 'CM2']
 
 type Step = 'upload' | 'extracting' | 'extracted' | 'generating' | 'done'
 
@@ -52,7 +55,9 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
   const [showControleModal, setShowControleModal] = useState(false)
   const [controleOptions, setControleOptions] = useState<{ duree: string; notation: string } | null>(null)
   const [illustrations, setIllustrations] = useState<{ images: Illustration[]; matiere: string | null }>({ images: [], matiere: null })
+  const [showDictee, setShowDictee] = useState(false)
   const [error, setError] = useState('')
+  const isPrimaire = PRIMAIRE.some((n) => niveau.includes(n))
 
   // Récupère des illustrations Wikimedia + la matière (arrière-plan, non bloquant)
   const fetchIllustrations = useCallback((text: string) => {
@@ -266,6 +271,11 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
     { id: 'done', label: 'Généré' },
   ]
   const currentIdx = STEPS.indexOf(step)
+
+  // Mode dictée (primaire) — remplace la vue, génère sa propre dictée du cours
+  if (showDictee) {
+    return <DicteeMode courseText={courseText} niveau={niveau} onClose={() => setShowDictee(false)} />
+  }
 
   return (
     <div>
@@ -514,6 +524,18 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
                 )}
               </button>
             </div>
+
+            {/* Mode dictée — primaire (CP → CM2) uniquement */}
+            {isPrimaire && (
+              <button
+                onClick={() => setShowDictee(true)}
+                disabled={step === 'generating'}
+                className="w-full mt-3 flex items-center justify-center gap-2.5 bg-white hover:bg-accent-50 border-2 border-accent-300 hover:border-accent-400 disabled:opacity-50 text-accent-700 font-bold py-4 rounded-2xl transition-all"
+              >
+                <span className="text-xl">🎤</span> Mode dictée
+                <span className="text-xs font-medium text-accent-500">l&apos;app lit, tu écris</span>
+              </button>
+            )}
           </div>
         </div>
       )}
