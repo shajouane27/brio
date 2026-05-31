@@ -1,16 +1,82 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { CLAUDE_MODEL } from '@/lib/model'
+import { createClient } from '@/lib/supabase/server'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const maxDuration = 60
 export const runtime = 'nodejs'
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// Enregistre les questions générées dans l'historique du cours.
+async function storeQuestions(
+  supabase: SupabaseClient | null,
+  userId: string | null,
+  coursId: string | undefined,
+  type: string,
+  questions: string[]
+): Promise<void> {
+  if (!supabase || !userId || !coursId || !questions.length) return
+  try {
+    await supabase.from('questions_posees').insert(
+      questions.slice(0, 40).map((q) => ({
+        user_id: userId,
+        cours_id: coursId,
+        type,
+        question: q.slice(0, 500),
+      }))
+    )
+  } catch (e) {
+    console.error('storeQuestions error:', e)
+  }
+}
+
+// Extrait le texte des questions d'un sujet de contrôle (pour l'historique).
+function extractControleQuestions(md: string): string[] {
+  const out: string[] = []
+  for (const raw of md.split('\n')) {
+    const line = raw.trim()
+    const m = line.match(/^(\d+)[.)]\s+(.+)$/)
+    if (m && !/(?:\.{6,}|…{2,}|_{6,})/.test(line)) {
+      const txt = m[2].replace(/\(\s*\d+\s*(?:pts?|points?)\s*\)\s*$/i, '').trim()
+      if (txt) out.push(txt)
+    }
+  }
+  return out
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { type, courseText, niveau, duree, notation } = body
+    const { type, duree, notation, coursId, harder } = body
+    let { courseText, niveau } = body
+
+    // Réutilisation d'un cours sauvegardé : on récupère le contenu + l'historique
+    let supabase: SupabaseClient | null = null
+    let userId: string | null = null
+    let previousQuestions: string[] = []
+
+    if (coursId) {
+      supabase = await createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        userId = user.id
+        const { data: cours } = await supabase
+          .from('cours').select('contenu, niveau').eq('id', coursId).single()
+        if (cours) {
+          courseText = cours.contenu
+          niveau = niveau || cours.niveau
+        }
+        const { data: qs } = await supabase
+          .from('questions_posees')
+          .select('question')
+          .eq('cours_id', coursId).eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(80)
+        previousQuestions = (qs ?? []).map((q) => q.question as string)
+      }
+    }
 
     if (!type || !courseText) {
       return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 })
@@ -177,6 +243,20 @@ ADAPTATION À LA MATIÈRE (détecte-la depuis le cours) :
 - Langues vivantes : traduction, texte à trous, compréhension, rédaction.`
     }
 
+    // Historique : ne jamais reposer les mêmes questions + difficulté progressive
+    if (type === 'exercices' || type === 'controle') {
+      if (previousQuestions.length) {
+        prompt += `\n\n--- QUESTIONS DÉJÀ POSÉES À CET ÉLÈVE SUR CE COURS ---
+Ne reprends AUCUNE de ces questions, même reformulée :
+${previousQuestions.map((q) => `- ${q}`).join('\n')}
+
+Génère des questions DIFFÉRENTES de celles-ci, sur les MÊMES notions mais avec des angles et des formulations différents.`
+      }
+      if (harder) {
+        prompt += `\n\nL'élève a bien réussi la session précédente (plus de 70 %) : augmente LÉGÈREMENT la difficulté (questions un peu plus exigeantes), sans changer de niveau scolaire.`
+      }
+    }
+
     const message = await anthropic.messages.create({
       model: CLAUDE_MODEL,
       max_tokens: type === 'controle' ? 8000 : 4096,
@@ -196,7 +276,12 @@ ADAPTATION À LA MATIÈRE (détecte-la depuis le cours) :
       if (!exercices.length) {
         return NextResponse.json({ error: 'Génération des exercices impossible. Réessaie.' }, { status: 502 })
       }
+      await storeQuestions(supabase, userId, coursId, type, exercices.map((e) => e.question))
       return NextResponse.json({ exercices })
+    }
+
+    if (type === 'controle') {
+      await storeQuestions(supabase, userId, coursId, type, extractControleQuestions(text))
     }
 
     return NextResponse.json({ text })

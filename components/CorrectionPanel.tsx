@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { toJpeg, isImageFile } from '@/lib/image'
 import Markdown from './Markdown'
+import RegenButtons, { type RegenFn } from './RegenButtons'
 
 interface CorrectionQuestion {
   numero: string
@@ -29,9 +30,10 @@ interface CorrectionPanelProps {
   duree?: string
   onClose: () => void
   onSaved?: () => void
+  onRegenerate?: RegenFn
 }
 
-export default function CorrectionPanel({ controleContent, notation, niveau, duree, onClose, onSaved }: CorrectionPanelProps) {
+export default function CorrectionPanel({ controleContent, notation, niveau, duree, onClose, onSaved, onRegenerate }: CorrectionPanelProps) {
   const [preview, setPreview] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [correcting, setCorrecting] = useState(false)
@@ -338,6 +340,10 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
               Retour au contrôle
             </button>
           </div>
+
+          {onRegenerate && (
+            <RegenButtons onRegenerate={onRegenerate} harder={totalMax > 0 && totalObtained / totalMax > 0.7} />
+          )}
         </div>
       )}
     </div>

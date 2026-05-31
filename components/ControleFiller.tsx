@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import CorrectionResultView, { type CorrectionResult } from './CorrectionResultView'
+import RegenButtons, { type RegenFn } from './RegenButtons'
 
 interface Props {
   controleContent: string
@@ -10,6 +11,7 @@ interface Props {
   duree?: string
   onClose: () => void
   onSaved?: () => void
+  onRegenerate?: RegenFn
 }
 
 interface QItem { numero: string; question: string; bareme: string; part: string }
@@ -44,7 +46,7 @@ function Spinner() {
   )
 }
 
-export default function ControleFiller({ controleContent, notation, niveau, duree, onClose, onSaved }: Props) {
+export default function ControleFiller({ controleContent, notation, niveau, duree, onClose, onSaved, onRegenerate }: Props) {
   const questions = useMemo(() => parseQuestions(controleContent), [controleContent])
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
@@ -109,12 +111,16 @@ export default function ControleFiller({ controleContent, notation, niveau, dure
 
   // Résultats
   if (phase === 'done' && result) {
+    const obtained = result.questions.reduce((s, q) => s + parseFloat(q.points_obtenus || '0'), 0)
+    const max = result.questions.reduce((s, q) => s + parseFloat(q.points_max || '0'), 0)
+    const harder = max > 0 && obtained / max > 0.7
     return (
       <div className="mt-6 space-y-4">
         <CorrectionResultView result={result} saved={saved} />
-        <button onClick={onClose} className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition-colors text-sm">
+        <button onClick={onClose} className="w-full py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-colors text-sm">
           Retour au contrôle
         </button>
+        {onRegenerate && <RegenButtons onRegenerate={onRegenerate} harder={harder} />}
       </div>
     )
   }

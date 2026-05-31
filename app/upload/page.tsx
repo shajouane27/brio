@@ -6,7 +6,7 @@ import UploadClient from './UploadClient'
 export default async function UploadPage({
   searchParams,
 }: {
-  searchParams: Promise<{ coursId?: string }>
+  searchParams: Promise<{ coursId?: string; action?: string }>
 }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -24,7 +24,7 @@ export default async function UploadPage({
   const profileType = profile?.profile_type ?? user.user_metadata?.profile_type ?? 'eleve'
 
   // Réutilisation d'un cours sauvegardé (RLS garantit que c'est bien le sien)
-  const { coursId } = await searchParams
+  const { coursId, action } = await searchParams
   let initialCourseText: string | undefined
   if (coursId) {
     const { data: cours } = await supabase
@@ -34,12 +34,18 @@ export default async function UploadPage({
       .single()
     if (cours?.contenu) initialCourseText = cours.contenu
   }
+  const initialAction = action === 'exercices' || action === 'controle' ? action : undefined
 
   return (
     <div className="min-h-screen">
       <Navbar prenom={prenom} profileType={profileType} />
       <main className="max-w-3xl mx-auto px-4 py-8">
-        <UploadClient niveau={niveau} initialCourseText={initialCourseText} initialCoursId={coursId} />
+        <UploadClient
+          niveau={niveau}
+          initialCourseText={initialCourseText}
+          initialCoursId={coursId}
+          initialAction={initialAction}
+        />
       </main>
     </div>
   )

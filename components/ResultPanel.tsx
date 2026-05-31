@@ -8,6 +8,7 @@ import ControleTimer from './ControleTimer'
 import ControleView from './ControleView'
 import ExercicesPlayer, { type Exercice } from './ExercicesPlayer'
 import ControleFiller from './ControleFiller'
+import { type RegenFn } from './RegenButtons'
 
 interface ResultPanelProps {
   content: string
@@ -17,9 +18,10 @@ interface ResultPanelProps {
   controleOptions?: { duree: string; notation: string }
   onReset: () => void
   onBack: () => void
+  onRegenerate?: RegenFn
 }
 
-export default function ResultPanel({ content, type, niveau, exercices, controleOptions, onReset, onBack }: ResultPanelProps) {
+export default function ResultPanel({ content, type, niveau, exercices, controleOptions, onReset, onBack, onRegenerate }: ResultPanelProps) {
   const [copied, setCopied] = useState(false)
   const [showCorrection, setShowCorrection] = useState(false)
   const [showFiller, setShowFiller] = useState(false)
@@ -73,6 +75,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
         duree={controleOptions.duree}
         niveau={niveau}
         onClose={() => setShowCorrection(false)}
+        onRegenerate={onRegenerate}
       />
     )
   }
@@ -85,6 +88,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
         duree={controleOptions.duree}
         niveau={niveau}
         onClose={() => setShowFiller(false)}
+        onRegenerate={onRegenerate}
       />
     )
   }
@@ -120,7 +124,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
 
         <div className="p-5 sm:p-7 max-h-[60vh] overflow-y-auto">
           {isExercices ? (
-            <ExercicesPlayer exercices={exercices ?? []} />
+            <ExercicesPlayer exercices={exercices ?? []} onRegenerate={onRegenerate} />
           ) : isControle ? (
             <ControleView content={content} niveau={niveau} notation={controleOptions?.notation} />
           ) : (

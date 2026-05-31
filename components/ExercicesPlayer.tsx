@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import RegenButtons, { type RegenFn } from './RegenButtons'
 
 export interface Exercice {
   type: 'qcm' | 'vraifaux' | 'ouverte'
@@ -14,9 +15,10 @@ export interface Exercice {
 
 interface Props {
   exercices: Exercice[]
+  onRegenerate?: RegenFn
 }
 
-export default function ExercicesPlayer({ exercices }: Props) {
+export default function ExercicesPlayer({ exercices, onRegenerate }: Props) {
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [corrected, setCorrected] = useState(false)
 
@@ -145,12 +147,20 @@ export default function ExercicesPlayer({ exercices }: Props) {
           ✓ Corriger mes réponses
         </button>
       ) : (
-        <button
-          onClick={reset}
-          className="w-full border border-slate-200 text-slate-600 font-semibold py-3 rounded-2xl hover:bg-slate-50 transition-colors text-sm"
-        >
-          ↺ Refaire les exercices
-        </button>
+        <>
+          <button
+            onClick={reset}
+            className="w-full border border-slate-200 text-slate-600 font-semibold py-3 rounded-2xl hover:bg-slate-50 transition-colors text-sm"
+          >
+            ↺ Refaire les exercices
+          </button>
+          {onRegenerate && (
+            <RegenButtons
+              onRegenerate={onRegenerate}
+              harder={gradable.length > 0 && score / gradable.length > 0.7}
+            />
+          )}
+        </>
       )}
     </div>
   )

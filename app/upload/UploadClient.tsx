@@ -2,12 +2,13 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import ControleModal from '@/components/ControleModal'
 import ResultPanel from '@/components/ResultPanel'
 import PhotoGallery, { PhotoItem } from '@/components/PhotoGallery'
 import { toJpeg, isImageFile } from '@/lib/image'
 import { type Exercice } from '@/components/ExercicesPlayer'
+import { type RegenFn } from '@/components/RegenButtons'
 
 type Step = 'upload' | 'extracting' | 'extracted' | 'generating' | 'done'
 
@@ -19,6 +20,8 @@ interface UploadClientProps {
   initialCourseText?: string
   /** Id du cours réutilisé — pour rattacher la fiche de révision au bon cours. */
   initialCoursId?: string
+  /** Action à déclencher automatiquement depuis la bibliothèque. */
+  initialAction?: 'exercices' | 'controle'
 }
 
 // Prépare un fichier : conversion JPEG + création de la preview
@@ -33,7 +36,7 @@ async function prepareFile(file: File): Promise<PhotoItem> {
 
 type GenType = 'exercices' | 'controle' | 'fiche'
 
-export default function UploadClient({ niveau, initialCourseText, initialCoursId }: UploadClientProps) {
+export default function UploadClient({ niveau, initialCourseText, initialCoursId, initialAction }: UploadClientProps) {
   const [step, setStep] = useState<Step>(initialCourseText ? 'extracted' : 'upload')
   const [photos, setPhotos] = useState<PhotoItem[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -43,6 +46,8 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
   const [generationType, setGenerationType] = useState<GenType | null>(null)
   // Id du cours en cours (extraction auto ou réutilisation) — pour rattacher la fiche
   const coursIdRef = useRef<string | null>(initialCoursId ?? null)
+  // Difficulté accrue en attente (régénération de contrôle après >70 %)
+  const regenHarderRef = useRef(false)
   const [showControleModal, setShowControleModal] = useState(false)
   const [controleOptions, setControleOptions] = useState<{ duree: string; notation: string } | null>(null)
   const [error, setError] = useState('')
@@ -157,7 +162,7 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
     }
   }
 
-  async function handleGenerate(type: GenType, options?: { duree: string; notation: string }) {
+  async function handleGenerate(type: GenType, options?: { duree: string; notation: string }, harder?: boolean) {
     setShowControleModal(false)
     setGenerationType(type)
     if (options) setControleOptions(options)
@@ -168,7 +173,14 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type, courseText, niveau, ...(options ?? {}) }),
+        body: JSON.stringify({
+          type,
+          courseText,
+          niveau,
+          coursId: coursIdRef.current ?? undefined,
+          harder: harder ?? false,
+          ...(options ?? {}),
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -206,6 +218,28 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
     setControleOptions(null)
     setError('')
   }
+
+  // Régénération depuis l'écran de correction : nouveau contenu sur le même cours
+  const onRegenerate: RegenFn = (type, opts) => {
+    if (type === 'controle') {
+      regenHarderRef.current = opts?.harder ?? false
+      setShowControleModal(true)
+    } else {
+      handleGenerate('exercices', undefined, opts?.harder)
+    }
+  }
+
+  // Action déclenchée automatiquement depuis la bibliothèque (?action=...)
+  const didInit = useRef(false)
+  useEffect(() => {
+    if (didInit.current) return
+    didInit.current = true
+    if (initialAction && initialCourseText) {
+      if (initialAction === 'exercices') handleGenerate('exercices')
+      else if (initialAction === 'controle') setShowControleModal(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Step indicator ────────────────────────────────────────────────────────
 
@@ -478,12 +512,17 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
           controleOptions={controleOptions ?? undefined}
           onReset={handleReset}
           onBack={() => setStep('extracted')}
+          onRegenerate={onRegenerate}
         />
       )}
 
       {showControleModal && (
         <ControleModal
-          onConfirm={(duree, notation) => handleGenerate('controle', { duree, notation })}
+          onConfirm={(duree, notation) => {
+            const harder = regenHarderRef.current
+            regenHarderRef.current = false
+            handleGenerate('controle', { duree, notation }, harder)
+          }}
           onClose={() => setShowControleModal(false)}
         />
       )}
