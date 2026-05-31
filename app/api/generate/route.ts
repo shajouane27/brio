@@ -21,20 +21,28 @@ export async function POST(request: NextRequest) {
     if (type === 'exercices') {
       prompt = `Tu es un professeur expert du système éducatif français pour le niveau ${niveau || 'lycée'}.
 
-À partir du cours suivant, génère une série d'exercices variés et progressifs adaptés au niveau ${niveau || 'lycée'}.
+À partir du cours suivant, génère 5 exercices variés et progressifs (facile → difficile), adaptés au niveau ${niveau || 'lycée'}.
 
 COURS :
 ${courseText}
 
-CONSIGNES :
-- Crée entre 4 et 6 exercices de difficulté progressive (facile → difficile)
-- Varie les types : QCM, questions ouvertes, exercices d'application, mise en situation
-- Chaque exercice doit avoir un titre et des consignes claires
-- Adapte le vocabulaire et la complexité au niveau ${niveau || 'lycée'}
-- Numérote les exercices (Exercice 1, Exercice 2, etc.)
-- Pour les QCM, propose 4 réponses possibles
+Réponds STRICTEMENT en JSON valide, rien d'autre (pas de texte autour, pas de balises markdown).
+Format : {"exercices":[ ... ]}
+Chaque exercice est un objet :
+{
+  "type": "qcm" | "vraifaux" | "ouverte",
+  "question": "énoncé clair de la question",
+  "options": ["...", "..."],          // UNIQUEMENT pour qcm (3-4 choix) et vraifaux (["Vrai","Faux"]) ; [] pour ouverte
+  "reponse": "la bonne réponse",        // pour qcm/vraifaux : EXACTEMENT l'une des options ; pour ouverte : la réponse attendue concise
+  "explication": "explication courte et claire adaptée au niveau, qui dit POURQUOI c'est la bonne réponse et quelle notion/règle s'applique",
+  "exemple": "un exemple concret et mémorisable",
+  "astuce": "une astuce mémo si pertinent, sinon chaîne vide"
+}
 
-Format de réponse en Markdown bien structuré.`
+RÈGLES :
+- Mélange les types : au moins 2 QCM, 1 vrai/faux, 1-2 questions ouvertes courtes.
+- Les explications, exemples et astuces doivent être pédagogiques et adaptés au niveau ${niveau || 'lycée'}.
+- N'écris JAMAIS la réponse dans le champ "question".`
 
     } else if (type === 'fiche') {
       prompt = `Tu es un professeur du système éducatif français pour le niveau ${niveau || 'lycée'}.
@@ -136,9 +144,59 @@ RÈGLES IMPORTANTES :
     })
 
     const text = message.content[0].type === 'text' ? message.content[0].text : ''
+
+    // Exercices : on renvoie un JSON structuré (réponses séparées des questions)
+    if (type === 'exercices') {
+      const exercices = parseExercices(text)
+      if (!exercices.length) {
+        return NextResponse.json({ error: 'Génération des exercices impossible. Réessaie.' }, { status: 502 })
+      }
+      return NextResponse.json({ exercices })
+    }
+
     return NextResponse.json({ text })
   } catch (error) {
     console.error('Generate error:', error)
     return NextResponse.json({ error: 'Erreur lors de la génération' }, { status: 500 })
+  }
+}
+
+interface Exercice {
+  type: 'qcm' | 'vraifaux' | 'ouverte'
+  question: string
+  options: string[]
+  reponse: string
+  explication: string
+  exemple: string
+  astuce: string
+}
+
+function parseExercices(raw: string): Exercice[] {
+  try {
+    const cleaned = raw.replace(/```json\s*|\s*```/g, '').trim()
+    const start = cleaned.indexOf('{')
+    const end = cleaned.lastIndexOf('}')
+    if (start === -1 || end === -1) return []
+    const obj = JSON.parse(cleaned.slice(start, end + 1))
+    const list = Array.isArray(obj?.exercices) ? obj.exercices : []
+    return list
+      .filter((e: unknown): e is Record<string, unknown> =>
+        !!e && typeof (e as Record<string, unknown>).question === 'string')
+      .map((e: Record<string, unknown>) => {
+        const type = e.type === 'vraifaux' ? 'vraifaux' : e.type === 'ouverte' ? 'ouverte' : 'qcm'
+        const options = Array.isArray(e.options) ? e.options.map((o) => String(o)) : []
+        return {
+          type,
+          question: String(e.question),
+          options: type === 'vraifaux' && options.length < 2 ? ['Vrai', 'Faux'] : options,
+          reponse: String(e.reponse ?? ''),
+          explication: String(e.explication ?? ''),
+          exemple: String(e.exemple ?? ''),
+          astuce: String(e.astuce ?? ''),
+        } as Exercice
+      })
+      .slice(0, 8)
+  } catch {
+    return []
   }
 }

@@ -7,6 +7,7 @@ import ControleModal from '@/components/ControleModal'
 import ResultPanel from '@/components/ResultPanel'
 import PhotoGallery, { PhotoItem } from '@/components/PhotoGallery'
 import { toJpeg, isImageFile } from '@/lib/image'
+import { type Exercice } from '@/components/ExercicesPlayer'
 
 type Step = 'upload' | 'extracting' | 'extracted' | 'generating' | 'done'
 
@@ -38,6 +39,7 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
   const [isProcessing, setIsProcessing] = useState(false)
   const [courseText, setCourseText] = useState(initialCourseText ?? '')
   const [generatedContent, setGeneratedContent] = useState('')
+  const [generatedExercices, setGeneratedExercices] = useState<Exercice[]>([])
   const [generationType, setGenerationType] = useState<GenType | null>(null)
   // Id du cours en cours (extraction auto ou réutilisation) — pour rattacher la fiche
   const coursIdRef = useRef<string | null>(initialCoursId ?? null)
@@ -170,7 +172,13 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
-      setGeneratedContent(data.text)
+      if (type === 'exercices') {
+        setGeneratedExercices(Array.isArray(data.exercices) ? data.exercices : [])
+        setGeneratedContent('')
+      } else {
+        setGeneratedContent(data.text)
+        setGeneratedExercices([])
+      }
       setStep('done')
 
       // Rattache la fiche de révision au cours correspondant (arrière-plan)
@@ -193,6 +201,7 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
     setPhotos([])
     setCourseText('')
     setGeneratedContent('')
+    setGeneratedExercices([])
     setGenerationType(null)
     setControleOptions(null)
     setError('')
@@ -460,9 +469,10 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
       )}
 
       {/* ── Result ───────────────────────────────────────────────────────── */}
-      {step === 'done' && generatedContent && (
+      {step === 'done' && (generatedContent || generatedExercices.length > 0) && (
         <ResultPanel
           content={generatedContent}
+          exercices={generatedExercices}
           type={generationType!}
           niveau={niveau}
           controleOptions={controleOptions ?? undefined}

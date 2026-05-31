@@ -5,19 +5,23 @@ import PdfDownloadButtons from './PdfDownloadButtons'
 import CorrectionPanel from './CorrectionPanel'
 import Markdown from './Markdown'
 import ControleTimer from './ControleTimer'
+import ExercicesPlayer, { type Exercice } from './ExercicesPlayer'
+import ControleFiller from './ControleFiller'
 
 interface ResultPanelProps {
   content: string
   type: 'exercices' | 'controle' | 'fiche'
   niveau: string
+  exercices?: Exercice[]
   controleOptions?: { duree: string; notation: string }
   onReset: () => void
   onBack: () => void
 }
 
-export default function ResultPanel({ content, type, niveau, controleOptions, onReset, onBack }: ResultPanelProps) {
+export default function ResultPanel({ content, type, niveau, exercices, controleOptions, onReset, onBack }: ResultPanelProps) {
   const [copied, setCopied] = useState(false)
   const [showCorrection, setShowCorrection] = useState(false)
+  const [showFiller, setShowFiller] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
 
   async function handleCopy() {
@@ -51,6 +55,7 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
 
   const isControle = type === 'controle'
   const isFiche = type === 'fiche'
+  const isExercices = type === 'exercices'
   const title = isControle ? 'Contrôle type généré' : isFiche ? 'Fiche de révision' : 'Exercices générés'
   const headerGradient = isControle
     ? 'from-brand-600 to-brand-700'
@@ -67,6 +72,18 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
         duree={controleOptions.duree}
         niveau={niveau}
         onClose={() => setShowCorrection(false)}
+      />
+    )
+  }
+
+  if (showFiller && isControle && controleOptions) {
+    return (
+      <ControleFiller
+        controleContent={content}
+        notation={controleOptions.notation}
+        duree={controleOptions.duree}
+        niveau={niveau}
+        onClose={() => setShowFiller(false)}
       />
     )
   }
@@ -90,16 +107,22 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
               <p className="text-xs text-white/80 mt-0.5">Niveau {niveau}</p>
             </div>
           </div>
-          <button
-            onClick={handleCopy}
-            className="text-sm font-semibold px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors shrink-0"
-          >
-            {copied ? '✓ Copié !' : 'Copier'}
-          </button>
+          {!isExercices && (
+            <button
+              onClick={handleCopy}
+              className="text-sm font-semibold px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors shrink-0"
+            >
+              {copied ? '✓ Copié !' : 'Copier'}
+            </button>
+          )}
         </div>
 
-        <div className="p-6 max-h-[55vh] overflow-y-auto">
-          <Markdown content={content} />
+        <div className="p-5 sm:p-6 max-h-[60vh] overflow-y-auto">
+          {isExercices ? (
+            <ExercicesPlayer exercices={exercices ?? []} />
+          ) : (
+            <Markdown content={content} />
+          )}
         </div>
       </div>
 
@@ -132,14 +155,22 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
         </button>
       )}
 
-      {/* Correction section — contrôle only */}
+      {/* Actions contrôle — remplir dans l'app + corriger par photo */}
       {isControle && (
-        <button
-          onClick={() => setShowCorrection(true)}
-          className="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white font-bold py-4 rounded-2xl shadow-md shadow-accent-500/25 hover:shadow-lg hover:-translate-y-0.5 transition-all text-base"
-        >
-          <span className="text-xl">📸</span> Corriger ma copie
-        </button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            onClick={() => setShowFiller(true)}
+            className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-2xl shadow-md shadow-brand-600/20 hover:shadow-lg hover:-translate-y-0.5 transition-all"
+          >
+            <span className="text-xl">✏️</span> Remplir dans l&apos;app
+          </button>
+          <button
+            onClick={() => setShowCorrection(true)}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white font-bold py-4 rounded-2xl shadow-md shadow-accent-500/25 hover:shadow-lg hover:-translate-y-0.5 transition-all"
+          >
+            <span className="text-xl">📸</span> Corriger ma copie
+          </button>
+        </div>
       )}
 
       {/* Nav buttons */}
