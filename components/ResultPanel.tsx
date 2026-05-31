@@ -4,6 +4,7 @@ import { useState } from 'react'
 import PdfDownloadButtons from './PdfDownloadButtons'
 import CorrectionPanel from './CorrectionPanel'
 import Markdown from './Markdown'
+import ControleTimer from './ControleTimer'
 
 interface ResultPanelProps {
   content: string
@@ -41,6 +42,11 @@ export default function ResultPanel({ content, type, niveau, controleOptions, on
 
   return (
     <div className="space-y-4">
+      {/* Minuteur — contrôle uniquement */}
+      {isControle && controleOptions && (
+        <ControleTimer duree={controleOptions.duree} />
+      )}
+
       {/* Main content card */}
       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
         <div className={`px-6 py-5 flex items-center justify-between text-white bg-gradient-to-r ${isControle ? 'from-brand-600 to-brand-700' : 'from-emerald-500 to-emerald-600'}`}>
