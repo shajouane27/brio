@@ -39,11 +39,19 @@ function formatDate(iso: string): string {
 export default function CorrectionDetailModal({ controle, onClose }: Props) {
   const totalObtained = controle.correction.questions.reduce((s, q) => s + parseFloat(q.points_obtenus || '0'), 0)
   const totalMax = controle.correction.questions.reduce((s, q) => s + parseFloat(q.points_max || '0'), 0)
+  const ratio = totalMax > 0 ? totalObtained / totalMax : null
+  const tone = ratio === null ? 'brand' : ratio >= 0.7 ? 'emerald' : ratio >= 0.4 ? 'accent' : 'red'
+  const heroClasses = {
+    brand: 'from-brand-500 to-brand-700',
+    emerald: 'from-emerald-500 to-emerald-600',
+    accent: 'from-accent-500 to-accent-600',
+    red: 'from-rose-500 to-rose-600',
+  }[tone]
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col"
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col animate-fade-in-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -52,22 +60,22 @@ export default function CorrectionDetailModal({ controle, onClose }: Props) {
             <h2 className="font-bold text-slate-900">{controle.matiere}</h2>
             <p className="text-xs text-slate-400 mt-0.5">{formatDate(controle.created_at)}{controle.duree && ` · ${controle.duree}`}</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
+          <button onClick={onClose} className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-xl leading-none">×</button>
         </div>
 
         {/* Scrollable content */}
         <div className="overflow-y-auto flex-1 p-6 space-y-4">
           {/* Note globale */}
-          <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 text-center border border-indigo-100">
-            <div className="text-4xl font-bold text-indigo-700">{controle.correction.note_finale}</div>
-            <div className="text-slate-600 text-sm mt-1">{controle.correction.appreciation}</div>
+          <div className={`relative overflow-hidden rounded-2xl p-5 text-center text-white bg-gradient-to-br ${heroClasses} shadow-md`}>
+            <div className="text-5xl font-extrabold tracking-tight">{controle.correction.note_finale}</div>
+            <div className="text-white/90 text-sm mt-2">{controle.correction.appreciation}</div>
             {totalMax > 0 && (
-              <div className="mt-3">
-                <div className="text-xs text-slate-500 mb-1">{totalObtained.toFixed(1)} / {totalMax} points</div>
-                <div className="h-1.5 bg-white rounded-full overflow-hidden border border-indigo-100">
+              <div className="mt-4 max-w-xs mx-auto">
+                <div className="text-xs font-medium text-white/80 mb-1">{totalObtained.toFixed(1)} / {totalMax} points</div>
+                <div className="h-2 bg-white/25 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full"
-                    style={{ width: `${Math.min(100, (totalObtained / totalMax) * 100)}%` }}
+                    className="h-full bg-white rounded-full"
+                    style={{ width: `${Math.min(100, (ratio ?? 0) * 100)}%` }}
                   />
                 </div>
               </div>
@@ -75,41 +83,46 @@ export default function CorrectionDetailModal({ controle, onClose }: Props) {
           </div>
 
           {/* Questions */}
-          {controle.correction.questions.map((q, i) => (
-            <div
-              key={i}
-              className={`rounded-xl border p-4 space-y-1.5 ${q.correct ? 'border-emerald-200 bg-emerald-50/30' : parseFloat(q.points_obtenus) === 0 ? 'border-red-200 bg-red-50/30' : 'border-amber-200 bg-amber-50/30'}`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-bold ${q.correct ? 'text-emerald-600' : parseFloat(q.points_obtenus) === 0 ? 'text-red-500' : 'text-amber-600'}`}>
-                    {q.correct ? '✓' : parseFloat(q.points_obtenus) === 0 ? '✗' : '~'}
+          {controle.correction.questions.map((q, i) => {
+            const status = q.correct ? 'ok' : parseFloat(q.points_obtenus) === 0 ? 'ko' : 'partial'
+            const badge = {
+              ok: { bg: 'bg-emerald-500', icon: '✓', border: 'border-l-emerald-400' },
+              ko: { bg: 'bg-rose-500', icon: '✗', border: 'border-l-rose-400' },
+              partial: { bg: 'bg-accent-500', icon: '~', border: 'border-l-accent-400' },
+            }[status]
+            return (
+              <div key={i} className={`rounded-2xl border border-slate-200 border-l-4 ${badge.border} p-4 space-y-2`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <span className={`shrink-0 w-6 h-6 rounded-full ${badge.bg} text-white text-xs font-bold flex items-center justify-center mt-0.5`}>
+                      {badge.icon}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-800">Q{q.numero}. {q.enonce_court}</span>
+                  </div>
+                  <span className="text-sm font-bold shrink-0 text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">
+                    {q.points_obtenus}/{q.points_max}
                   </span>
-                  <span className="text-sm font-semibold text-slate-800">Q{q.numero}. {q.enonce_court}</span>
                 </div>
-                <span className={`text-sm font-bold shrink-0 ${q.correct ? 'text-emerald-600' : 'text-slate-500'}`}>
-                  {q.points_obtenus}/{q.points_max}
-                </span>
+
+                {q.reponse_eleve && (
+                  <div className="bg-slate-50 rounded-lg px-3 py-1.5 text-xs ml-8">
+                    <span className="text-slate-400">Réponse : </span>
+                    <span className="text-slate-700">{q.reponse_eleve}</span>
+                  </div>
+                )}
+
+                {q.bon_element && (
+                  <p className="text-xs text-emerald-800 bg-emerald-50 rounded-lg px-3 py-1.5 ml-8">✓ {q.bon_element}</p>
+                )}
+                {q.a_ameliorer && (
+                  <p className="text-xs text-accent-800 bg-accent-50 rounded-lg px-3 py-1.5 ml-8">→ {q.a_ameliorer}</p>
+                )}
+                {q.commentaire_peda && (
+                  <p className="text-xs text-brand-800 italic bg-brand-50 rounded-lg px-3 py-1.5 ml-8">💡 {q.commentaire_peda}</p>
+                )}
               </div>
-
-              {q.reponse_eleve && (
-                <div className="bg-white/70 rounded-lg px-3 py-1.5 text-xs">
-                  <span className="text-slate-400">Ta réponse : </span>
-                  <span className="text-slate-700">{q.reponse_eleve}</span>
-                </div>
-              )}
-
-              {q.bon_element && (
-                <p className="text-xs text-emerald-700">✓ {q.bon_element}</p>
-              )}
-              {q.a_ameliorer && (
-                <p className="text-xs text-amber-700">→ {q.a_ameliorer}</p>
-              )}
-              {q.commentaire_peda && (
-                <p className="text-xs text-slate-500 italic border-l-2 border-slate-200 pl-2">{q.commentaire_peda}</p>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

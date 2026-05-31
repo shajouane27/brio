@@ -35,9 +35,9 @@ interface HistoriqueListProps {
 }
 
 function noteColor(note: number): string {
-  if (note >= 14) return 'text-emerald-600 bg-emerald-50'
-  if (note >= 10) return 'text-amber-600 bg-amber-50'
-  return 'text-red-600 bg-red-50'
+  if (note >= 14) return 'text-emerald-700 bg-emerald-100'
+  if (note >= 10) return 'text-accent-700 bg-accent-100'
+  return 'text-rose-700 bg-rose-100'
 }
 
 function formatDate(iso: string): string {
@@ -49,9 +49,9 @@ export default function HistoriqueList({ controles, readOnly }: HistoriqueListPr
 
   if (!controles.length) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
-        <div className="text-4xl mb-3">📋</div>
-        <p className="text-slate-500 text-sm">
+      <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
+        <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-3xl mb-3">📋</div>
+        <p className="text-slate-500 text-sm max-w-xs mx-auto">
           {readOnly ? "Aucun contrôle corrigé pour l'instant." : "Aucun contrôle corrigé pour l'instant. Analyse un cours et corrige ta copie !"}
         </p>
       </div>
@@ -60,27 +60,27 @@ export default function HistoriqueList({ controles, readOnly }: HistoriqueListPr
 
   return (
     <>
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {controles.map((c) => (
           <button
             key={c.id}
             onClick={() => setSelected(c)}
-            className="w-full bg-white rounded-xl border border-slate-200 hover:border-indigo-300 hover:shadow-sm p-4 flex items-center gap-4 transition-all text-left group"
+            className="w-full bg-white rounded-2xl border border-slate-200 hover:border-brand-300 hover:shadow-md hover:-translate-y-0.5 p-4 flex items-center gap-4 transition-all text-left group"
           >
-            <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0 font-bold text-sm ${noteColor(c.note_sur_20)}`}>
-              <span className="text-lg leading-none">{c.note_obtenue?.split('/')[0] ?? '–'}</span>
-              <span className="text-xs opacity-70">{c.notation}</span>
+            <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 font-bold ${noteColor(c.note_sur_20)}`}>
+              <span className="text-xl leading-none">{c.note_obtenue?.split('/')[0] ?? '–'}</span>
+              <span className="text-[10px] opacity-70 mt-0.5">{c.notation}</span>
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="font-semibold text-slate-900 truncate">{c.matiere}</div>
+              <div className="font-bold text-slate-900 truncate">{c.matiere}</div>
               <div className="text-xs text-slate-400 mt-0.5">
                 {formatDate(c.created_at)}
                 {c.duree && ` · ${c.duree}`}
               </div>
             </div>
 
-            <div className="text-slate-300 group-hover:text-indigo-400 transition-colors shrink-0">→</div>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-slate-300 group-hover:text-brand-600 group-hover:bg-brand-50 transition-all shrink-0">→</div>
           </button>
         ))}
       </div>

@@ -28,13 +28,19 @@ function formatDateShort(iso: string): string {
 export default function ProgressionChart({ controles }: ProgressionChartProps) {
   if (controles.length < 2) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <h3 className="font-semibold text-slate-900 mb-2">📈 Progression</h3>
-        <p className="text-sm text-slate-400">
-          {controles.length === 0
-            ? 'Aucun résultat pour l\'instant.'
-            : 'Il te faut au moins 2 contrôles pour voir ta progression.'}
-        </p>
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-100 text-brand-700">📈</span>
+          Progression
+        </h3>
+        <div className="flex flex-col items-center justify-center py-6 text-center">
+          <div className="text-3xl mb-2 opacity-60">📊</div>
+          <p className="text-sm text-slate-400 max-w-xs">
+            {controles.length === 0
+              ? 'Aucun résultat pour l\'instant. Corrige ta première copie pour suivre ta progression !'
+              : 'Il te faut au moins 2 contrôles corrigés pour voir ta courbe de progression.'}
+          </p>
+        </div>
       </div>
     )
   }
@@ -65,17 +71,20 @@ export default function ProgressionChart({ controles }: ProgressionChartProps) {
   const maitrisees = moyennes.filter((m) => m.avg >= 14)
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 shadow-sm">
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <h3 className="font-semibold text-slate-900">📈 Progression par matière</h3>
+        <h3 className="font-bold text-slate-900 flex items-center gap-2">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-100 text-brand-700">📈</span>
+          Progression par matière
+        </h3>
         <div className="flex flex-wrap gap-2">
           {enDifficulte.map((m) => (
-            <span key={m.matiere} className="text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-medium">
+            <span key={m.matiere} className="text-xs bg-rose-50 text-rose-600 px-2.5 py-1 rounded-full font-semibold border border-rose-100">
               ⚠ {m.matiere} ({m.avg.toFixed(1)}/20)
             </span>
           ))}
           {maitrisees.map((m) => (
-            <span key={m.matiere} className="text-xs bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded-full font-medium">
+            <span key={m.matiere} className="text-xs bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full font-semibold border border-emerald-100">
               ✓ {m.matiere} ({m.avg.toFixed(1)}/20)
             </span>
           ))}
