@@ -107,51 +107,91 @@ export default async function DashboardPage() {
       <Navbar prenom={prenom} profileType={profileType} />
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         {/* ── Hero : accueil + CTA principal ──────────────────────────────── */}
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 via-brand-600 to-brand-800 p-7 sm:p-9 text-white shadow-lg shadow-brand-600/20 animate-fade-in-up">
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-700 via-indigo-600 to-indigo-500 p-7 sm:p-9 text-white shadow-lg shadow-indigo-600/20 animate-fade-in-up">
           <div className="absolute -right-10 -top-12 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
-          <div className="absolute right-20 bottom-0 w-32 h-32 rounded-full bg-accent-400/25 blur-2xl" />
+          <div className="absolute right-20 bottom-0 w-32 h-32 rounded-full bg-accent-400/20 blur-2xl" />
           <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
             <div>
               <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Bonjour {prenom} 👋</h1>
-              <p className="text-brand-100 mt-2 max-w-md">
+              <p className="text-indigo-100 mt-2.5 max-w-md text-base sm:text-lg leading-relaxed">
                 Prends en photo ton cours et laisse Brio générer tes exercices et corriger tes copies.
               </p>
               {niveau && (
-                <span className="inline-flex items-center gap-1.5 mt-3 bg-white/15 text-white text-sm font-semibold px-3 py-1 rounded-full">
+                <span className="inline-flex items-center gap-1.5 mt-3.5 bg-white/15 text-white text-sm font-semibold px-3 py-1 rounded-full">
                   🎓 {niveau}
                 </span>
               )}
             </div>
             <Link
               href="/upload"
-              className="shrink-0 inline-flex items-center justify-center gap-2 bg-white text-brand-700 hover:bg-accent-50 font-bold px-6 py-3.5 rounded-2xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+              className="shrink-0 inline-flex items-center justify-center gap-2 bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-6 py-3.5 rounded-2xl shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
             >
-              <span className="text-xl">📸</span> Analyser un cours
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Analyser un cours
             </Link>
           </div>
         </section>
 
         {/* ── Accès rapides / stats ───────────────────────────────────────── */}
         <section className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <StatCard
-            icon="📋"
-            value={String(allControles.length)}
-            label={`contrôle${allControles.length > 1 ? 's' : ''} corrigé${allControles.length > 1 ? 's' : ''}`}
-            tone="brand"
-          />
-          <StatCard
-            icon="🎯"
-            value={moyenne ? `${moyenne}` : '—'}
-            label={moyenne ? 'moyenne /20' : 'pas encore de note'}
-            tone="accent"
-          />
+          {allControles.length > 0 ? (
+            <>
+              <StatCard
+                icon="📋"
+                value={String(allControles.length)}
+                label={`contrôle${allControles.length > 1 ? 's' : ''} corrigé${allControles.length > 1 ? 's' : ''}`}
+                tone="brand"
+              />
+              <StatCard
+                icon="🎯"
+                value={moyenne ? `${moyenne}` : '—'}
+                label={moyenne ? 'moyenne /20' : 'pas encore de note'}
+                tone="accent"
+              />
+            </>
+          ) : (
+            <>
+              {/* Encouragement — aucun contrôle pour l'instant */}
+              <Link
+                href="/upload"
+                className="group flex flex-col justify-between rounded-2xl border border-brand-100 bg-gradient-to-br from-brand-50 to-white p-5 transition-all hover:shadow-md hover:-translate-y-0.5"
+              >
+                <div className="text-2xl">🚀</div>
+                <div className="mt-2">
+                  <div className="flex items-center gap-1.5 font-bold text-brand-700">
+                    Lance ton premier contrôle&nbsp;!
+                    <span className="group-hover:translate-x-1 transition-transform">→</span>
+                  </div>
+                  <div className="text-xs font-medium text-brand-400 mt-1">Ta première note s&apos;affichera ici</div>
+                </div>
+              </Link>
+
+              {/* Encouragement — progression à venir */}
+              <div className="flex flex-col justify-between rounded-2xl border border-accent-100 bg-gradient-to-br from-accent-50 to-white p-5">
+                <div className="text-2xl">📈</div>
+                <div className="mt-2">
+                  <div className="font-bold text-accent-600">Ta progression</div>
+                  <div className="text-xs font-medium text-slate-500 mt-1">apparaîtra ici au fil de tes contrôles</div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Nouveau cours — carte pleine avec icône moderne */}
           <Link
             href="/upload"
-            className="group flex flex-col items-start justify-center gap-1 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/50 hover:bg-brand-50 hover:border-brand-300 p-5 transition-all col-span-2 sm:col-span-1"
+            className="group flex flex-col items-start justify-center gap-2 rounded-2xl bg-brand-600 hover:bg-brand-700 p-5 shadow-md shadow-brand-600/20 hover:shadow-lg hover:-translate-y-0.5 transition-all col-span-2 sm:col-span-1"
           >
-            <span className="text-2xl group-hover:scale-110 transition-transform">✨</span>
-            <span className="font-bold text-brand-700">Nouveau cours</span>
-            <span className="text-xs text-brand-400">Générer des exercices</span>
+            <span className="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-white/15 text-white group-hover:scale-105 transition-transform">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+            </span>
+            <span className="font-bold text-white">Nouveau cours</span>
+            <span className="text-xs text-white/70">Générer des exercices</span>
           </Link>
         </section>
 
