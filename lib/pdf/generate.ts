@@ -195,17 +195,6 @@ function addPage(doc: PDFDocument, bold: PDFFont, regular: PDFFont, meta: PdfMet
   return [page, y]
 }
 
-// ── draw helpers ─────────────────────────────────────────────────────────────
-
-function drawAnswerLines(page: PDFPage, x: number, y: number, width: number, lineCount: number, lineH: number): number {
-  const gray = rgb(0.75, 0.75, 0.75)
-  for (let i = 0; i < lineCount; i++) {
-    const ly = y - i * lineH
-    page.drawLine({ start: { x, y: ly }, end: { x: x + width, y: ly }, thickness: 0.4, color: gray })
-  }
-  return y - lineCount * lineH - 4
-}
-
 // ── main generator ───────────────────────────────────────────────────────────
 
 export async function generateControlePdf(
@@ -220,13 +209,12 @@ export async function generateControlePdf(
   const margin = 50
   const pageWidth = 595
   const contentWidth = pageWidth - margin * 2
-  const lineH = 18
+  const lineH = 21
   const minY = 60
 
-  let [page, y] = addPage(doc, bold, regular, meta)
+  void fillable // version interactive supprimée : on génère toujours la version imprimable
 
-  const form = fillable ? doc.getForm() : null
-  let fieldIdx = 0
+  let [page, y] = addPage(doc, bold, regular, meta)
 
   function ensureSpace(needed: number): void {
     if (y - needed < minY) {
@@ -244,80 +232,59 @@ export async function generateControlePdf(
       }
 
       case 'title': {
-        ensureSpace(36)
-        const wrapped = wrapText(line.text, bold, 14, contentWidth)
+        ensureSpace(40)
+        const wrapped = wrapText(line.text, bold, 16, contentWidth)
         for (const w of wrapped) {
-          page.drawText(w, { x: margin, y, size: 14, font: bold, color: rgb(0.1, 0.1, 0.5) })
+          const tw = bold.widthOfTextAtSize(w, 16)
+          page.drawText(w, { x: margin + (contentWidth - tw) / 2, y, size: 16, font: bold, color: rgb(0.1, 0.1, 0.5) })
           y -= lineH + 2
         }
-        y -= 4
+        y -= 8
         break
       }
 
       case 'part': {
-        ensureSpace(30)
-        y -= 4
-        page.drawRectangle({ x: margin - 4, y: y - 2, width: contentWidth + 8, height: 18, color: rgb(0.93, 0.93, 1) })
-        page.drawText(line.text, { x: margin, y, size: 11, font: bold, color: rgb(0.2, 0.2, 0.7) })
-        y -= lineH + 6
+        ensureSpace(34)
+        y -= 10
+        const tw = bold.widthOfTextAtSize(line.text, 13)
+        page.drawText(line.text, { x: margin + Math.max(0, (contentWidth - tw) / 2), y, size: 13, font: bold, color: rgb(0.2, 0.2, 0.7) })
+        y -= 8
+        page.drawLine({ start: { x: margin, y }, end: { x: pageWidth - margin, y }, thickness: 0.8, color: rgb(0.8, 0.8, 0.9) })
+        y -= 16
         break
       }
 
       case 'question': {
-        const answerLines = 3
-        const needed = lineH * (2 + answerLines) + 20
-        ensureSpace(needed)
-
-        // Question text
+        // Les espaces de réponse (pointillés) sont fournis par le contenu lui-même,
+        // donc on dessine seulement l'énoncé, lisiblement, sans lignes auto.
+        ensureSpace(lineH * 2)
+        y -= 4
         const qWrapped = wrapText(
           line.points ? `${line.text}  (${line.points})` : line.text,
           bold,
-          10,
-          contentWidth - 8
+          12,
+          contentWidth - 4
         )
         for (const w of qWrapped) {
-          page.drawText(w, { x: margin + 4, y, size: 10, font: bold, color: rgb(0, 0, 0) })
+          page.drawText(w, { x: margin + 4, y, size: 12, font: bold, color: rgb(0, 0, 0) })
           y -= lineH
-        }
-        y -= 4
-
-        if (fillable && form) {
-          // Interactive text field
-          const fieldH = answerLines * lineH + 4
-          const field = form.createTextField(`answer_${fieldIdx++}`)
-          field.setText('')
-          field.addToPage(page, {
-            x: margin + 4,
-            y: y - fieldH,
-            width: contentWidth - 8,
-            height: fieldH,
-            textColor: rgb(0, 0, 0),
-            backgroundColor: rgb(0.97, 0.97, 1),
-            borderColor: rgb(0.7, 0.7, 0.85),
-            borderWidth: 0.5,
-          })
-          field.enableMultiline()
-          y -= fieldH + 10
-        } else {
-          y = drawAnswerLines(page, margin + 4, y, contentWidth - 8, answerLines, lineH)
-          y -= 8
         }
         break
       }
 
       case 'instruction': {
         ensureSpace(lineH + 4)
-        page.drawText(line.text, { x: margin, y, size: 9, font: regular, color: rgb(0.4, 0.4, 0.4) })
+        page.drawText(line.text, { x: margin, y, size: 11, font: regular, color: rgb(0.4, 0.4, 0.4) })
         y -= lineH
         break
       }
 
       case 'text': {
         if (!line.text) { y -= 6; break }
-        const wrapped = wrapText(line.text, regular, 10, contentWidth)
+        const wrapped = wrapText(line.text, regular, 12, contentWidth)
         for (const w of wrapped) {
           ensureSpace(lineH)
-          page.drawText(w, { x: margin, y, size: 10, font: regular, color: rgb(0.15, 0.15, 0.15) })
+          page.drawText(w, { x: margin, y, size: 12, font: regular, color: rgb(0.15, 0.15, 0.15) })
           y -= lineH
         }
         break

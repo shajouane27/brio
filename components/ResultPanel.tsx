@@ -5,6 +5,7 @@ import PdfDownloadButtons from './PdfDownloadButtons'
 import CorrectionPanel from './CorrectionPanel'
 import Markdown from './Markdown'
 import ControleTimer from './ControleTimer'
+import ControleView from './ControleView'
 import ExercicesPlayer, { type Exercice } from './ExercicesPlayer'
 import ControleFiller from './ControleFiller'
 
@@ -117,9 +118,11 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
           )}
         </div>
 
-        <div className="p-5 sm:p-6 max-h-[60vh] overflow-y-auto">
+        <div className="p-5 sm:p-7 max-h-[60vh] overflow-y-auto">
           {isExercices ? (
             <ExercicesPlayer exercices={exercices ?? []} />
+          ) : isControle ? (
+            <ControleView content={content} niveau={niveau} notation={controleOptions?.notation} />
           ) : (
             <Markdown content={content} />
           )}

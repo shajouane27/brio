@@ -99,37 +99,42 @@ PARAMÈTRES :
 - Notation : ${notationLabel}
 - Niveau : ${niveau || 'lycée'}
 
-Réponds UNIQUEMENT en Markdown, en respectant SCRUPULEUSEMENT ce gabarit :
+N'inclus PAS d'en-tête Nom/Prénom/Date/Note : il est ajouté automatiquement. Commence directement par le titre.
 
-1. EN-TÊTE — un tableau Markdown avec l'identité de l'élève et la note à droite :
+Réponds UNIQUEMENT en texte, UNE SEULE chose par ligne, en respectant SCRUPULEUSEMENT ces règles de mise en page (c'est un vrai contrôle d'école, lisible par un enfant) :
 
-| Nom / Prénom | Classe | Date | Note |
-|---|---|---|---|
-| ........................ | .......... | .......... | ........ ${notation === '/100' ? '/ 100' : notation === 'lettres' ? '' : '/ 20'} |
-
-2. TITRE — un titre de niveau 1 centré avec la matière et la durée, par exemple :
+1. TITRE — première ligne, titre de niveau 1 avec la matière et la durée :
 # Contrôle de [Matière] — Durée : ${dureeLabel}
 
-3. CONSIGNE courte en italique sous le titre (matériel autorisé, soin, etc.).
+2. Une CONSIGNE courte en italique sur sa propre ligne (ex : *Lis bien chaque question. Soigne ton écriture.*).
 
-4. PARTIES — numérotées en chiffres romains, en titre de niveau 2, avec le total de points de la partie entre parenthèses :
-## I. [Titre de la partie] (... points)
+3. PARTIES — chaque partie commence par un titre en chiffres romains, avec le total de points :
+## I. [Titre de la partie] (… points)
 
-5. SOUS-QUESTIONS — une liste numérotée (1., 2., 3.). Chaque question se termine par son barème entre parenthèses, ex : (2 pts). Sous CHAQUE question, laisse des lignes de réponse en pointillés (indentées de 3 espaces pour rester dans la question) :
+4. QUESTIONS — chaque question sur SA PROPRE LIGNE, numérotée (1., 2., 3.), avec son barème entre parenthèses à la fin. JAMAIS deux questions sur la même ligne.
 
-1. Énoncé de la question. (2 pts)
-   ............................................................
-   ............................................................
+5. ESPACES DE RÉPONSE — sous CHAQUE question, mets une ou plusieurs lignes de réponse, CHACUNE sur sa propre ligne, faites de pointillés longs :
+.................................................................
 
-2. Énoncé suivant. (4 pts)
-   ............................................................
+6. Laisse TOUJOURS une LIGNE VIDE entre deux questions, pour aérer.
 
-RÈGLES IMPORTANTES :
-- Le total des points doit correspondre EXACTEMENT à la notation (${notationLabel}).
+7. CONJUGAISON — si tu demandes de conjuguer, mets CHAQUE personne sur sa propre ligne avec ses pointillés. Exemple EXACT à reproduire :
+Je .................................................................
+Tu .................................................................
+Il / Elle .................................................................
+Nous .................................................................
+Vous .................................................................
+Ils / Elles .................................................................
+
+8. TEXTES À TROUS — mets CHAQUE phrase sur sa propre ligne, avec les pointillés à l'emplacement du trou.
+
+RÈGLES GÉNÉRALES :
+- JAMAIS plusieurs réponses sur la même ligne : TOUJOURS une réponse par ligne.
+- Le total des points correspond EXACTEMENT à la notation (${notationLabel}).
 - 2 à 4 parties (I, II, III…), de la plus simple à la plus complexe.
 - Adapte la quantité de questions à la durée (${dureeLabel}).
-- Aucun émoji. Pas de mise en gras des énoncés. Reste sobre et scolaire.
-- Ne mets ni introduction ni commentaire avant ou après le sujet : commence directement par le tableau d'en-tête.`
+- Aucun émoji. Pas de gras inutile. Reste sobre et scolaire.
+- Aucune introduction ni commentaire : commence directement par le titre.`
     }
 
     const message = await anthropic.messages.create({
