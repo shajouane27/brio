@@ -9,6 +9,10 @@ import ControleView from './ControleView'
 import ExercicesPlayer, { type Exercice } from './ExercicesPlayer'
 import ControleFiller from './ControleFiller'
 import { type RegenFn } from './RegenButtons'
+import Illustrations, { type Illustration } from './Illustrations'
+import SvgFigures from './SvgFigures'
+import GeoMap from './GeoMap'
+import { extractSvgs } from '@/lib/svg'
 
 interface ResultPanelProps {
   content: string
@@ -16,12 +20,15 @@ interface ResultPanelProps {
   niveau: string
   exercices?: Exercice[]
   controleOptions?: { duree: string; notation: string }
+  illustrations?: { images: Illustration[]; matiere: string | null }
   onReset: () => void
   onBack: () => void
   onRegenerate?: RegenFn
 }
 
-export default function ResultPanel({ content, type, niveau, exercices, controleOptions, onReset, onBack, onRegenerate }: ResultPanelProps) {
+const GEO_MATIERES = ['Histoire-Géographie', 'Histoire', 'Géographie']
+
+export default function ResultPanel({ content, type, niveau, exercices, controleOptions, illustrations, onReset, onBack, onRegenerate }: ResultPanelProps) {
   const [copied, setCopied] = useState(false)
   const [showCorrection, setShowCorrection] = useState(false)
   const [showFiller, setShowFiller] = useState(false)
@@ -59,6 +66,8 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
   const isControle = type === 'controle'
   const isFiche = type === 'fiche'
   const isExercices = type === 'exercices'
+  // Sépare les schémas SVG du texte (rendu à part, responsive)
+  const body = isExercices ? { text: content, svgs: [] as string[] } : extractSvgs(content)
   const title = isControle ? 'Contrôle type généré' : isFiche ? 'Fiche de révision' : 'Exercices générés'
   const headerGradient = isControle
     ? 'from-brand-600 to-brand-700'
@@ -126,12 +135,25 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
           {isExercices ? (
             <ExercicesPlayer exercices={exercices ?? []} onRegenerate={onRegenerate} />
           ) : isControle ? (
-            <ControleView content={content} niveau={niveau} notation={controleOptions?.notation} />
+            <ControleView content={body.text} niveau={niveau} notation={controleOptions?.notation} />
           ) : (
-            <Markdown content={content} />
+            <Markdown content={body.text} />
+          )}
+          {body.svgs.length > 0 && (
+            <div className="mt-5"><SvgFigures svgs={body.svgs} /></div>
           )}
         </div>
       </div>
+
+      {/* Illustrations Wikimedia (matières scientifiques / géo) */}
+      {illustrations && illustrations.images.length > 0 && (
+        <Illustrations images={illustrations.images} />
+      )}
+
+      {/* Carte interactive — fiche d'Histoire-Géographie */}
+      {isFiche && illustrations?.matiere && GEO_MATIERES.includes(illustrations.matiere) && (
+        <GeoMap niveau={niveau} />
+      )}
 
       {/* PDF download — contrôle only */}
       {isControle && controleOptions && (

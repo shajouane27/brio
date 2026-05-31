@@ -138,6 +138,8 @@ Les termes clés, chacun en gras suivi de sa définition en une seule ligne. Exe
 ## Astuce mémoire
 Un seul moyen mnémotechnique ou une astuce simple pour retenir l'essentiel.
 
+SCHÉMA (si pertinent) : Si le cours contient des circuits électriques, des molécules, des figures géométriques ou des schémas scientifiques, génère le SVG correspondant en code (une balise <svg>…</svg> autonome, avec un viewBox défini, sans largeur/hauteur fixes en pixels pour rester responsive). Le SVG sera rendu directement dans l'app.
+
 RÈGLES :
 - Reste synthétique : on doit pouvoir lire la fiche en 5 minutes.
 - Pas d'émojis. Markdown propre (titres ##, puces -, gras ** pour les termes).
@@ -220,6 +222,8 @@ Résultat :
 │                                                  │
 │                                                  │
 └─────────────────────────────────────────────────┘
+
+SCHÉMA (si pertinent) : Si une question porte sur un circuit électrique, une molécule, une figure géométrique ou un schéma scientifique, génère le SVG correspondant en code (une balise <svg>…</svg> autonome avec un viewBox défini, sans largeur/hauteur fixes en pixels). Il sera rendu directement dans l'app.
 
 RÈGLES GLOBALES OBLIGATOIRES :
 - Une question par ligne minimum ; une réponse par ligne — JAMAIS deux réponses côte à côte.

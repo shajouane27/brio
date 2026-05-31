@@ -54,3 +54,11 @@ body {
 .animate-fade-in-up {
   animation: brio-fade-in-up 0.4s ease-out both;
 }
+
+/* SVG générés par l'IA : toujours responsives */
+.brio-svg svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin-inline: auto;
+}

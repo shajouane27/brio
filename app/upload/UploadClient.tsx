@@ -9,6 +9,7 @@ import PhotoGallery, { PhotoItem } from '@/components/PhotoGallery'
 import { toJpeg, isImageFile } from '@/lib/image'
 import { type Exercice } from '@/components/ExercicesPlayer'
 import { type RegenFn } from '@/components/RegenButtons'
+import { type Illustration } from '@/components/Illustrations'
 
 type Step = 'upload' | 'extracting' | 'extracted' | 'generating' | 'done'
 
@@ -50,7 +51,20 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
   const regenHarderRef = useRef(false)
   const [showControleModal, setShowControleModal] = useState(false)
   const [controleOptions, setControleOptions] = useState<{ duree: string; notation: string } | null>(null)
+  const [illustrations, setIllustrations] = useState<{ images: Illustration[]; matiere: string | null }>({ images: [], matiere: null })
   const [error, setError] = useState('')
+
+  // Récupère des illustrations Wikimedia + la matière (arrière-plan, non bloquant)
+  const fetchIllustrations = useCallback((text: string) => {
+    fetch('/api/illustrations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ courseText: text, niveau }),
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d) setIllustrations({ images: d.images ?? [], matiere: d.matiere ?? null }) })
+      .catch(() => { /* silencieux */ })
+  }, [niveau])
 
   // Refs pour les inputs natifs (galerie + caméra)
   const galleryInputRef = useRef<HTMLInputElement>(null)
@@ -139,6 +153,7 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
       if (!res.ok) throw new Error(data.error || `Erreur serveur (${res.status})`)
       setCourseText(data.text ?? '')
       setStep('extracted')
+      if (data.text) fetchIllustrations(data.text)
 
       // Sauvegarde automatique du cours dans la bibliothèque (en arrière-plan)
       if (data.text) {
@@ -234,6 +249,7 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
   useEffect(() => {
     if (didInit.current) return
     didInit.current = true
+    if (initialCourseText) fetchIllustrations(initialCourseText)
     if (initialAction && initialCourseText) {
       if (initialAction === 'exercices') handleGenerate('exercices')
       else if (initialAction === 'controle') setShowControleModal(true)
@@ -510,6 +526,7 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
           type={generationType!}
           niveau={niveau}
           controleOptions={controleOptions ?? undefined}
+          illustrations={illustrations}
           onReset={handleReset}
           onBack={() => setStep('extracted')}
           onRegenerate={onRegenerate}

@@ -235,6 +235,9 @@ export async function generateControlePdf(
 
   void fillable // version interactive supprimée : on génère toujours la version imprimable
 
+  // Les schémas SVG ne sont pas imprimables en texte : on les retire du PDF
+  content = content.replace(/<svg[\s\S]*?<\/svg>/gi, '').replace(/```(?:svg|xml|html)?\s*```/gi, '')
+
   let [page, y] = addPage(doc, bold, regular, meta)
 
   function ensureSpace(needed: number): void {
@@ -353,6 +356,9 @@ export async function generateFichePdf(
   const brand = rgb(0.39, 0.4, 0.95)
   const dark = rgb(0.1, 0.1, 0.2)
   const gray = rgb(0.35, 0.35, 0.4)
+
+  // Retire les schémas SVG (non imprimables en texte)
+  content = content.replace(/<svg[\s\S]*?<\/svg>/gi, '').replace(/```(?:svg|xml|html)?\s*```/gi, '')
 
   let page = doc.addPage([pageWidth, pageHeight])
   let y = pageHeight - 50
