@@ -12,6 +12,7 @@ interface CorrectionQuestion {
   points_obtenus: string
   points_max: string
   correct: boolean
+  elements?: { texte: string; correct: boolean; correction: string }[]
   bon_element: string
   a_ameliorer: string
   commentaire_peda: string
@@ -297,6 +298,21 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
                       <div className="bg-slate-50 rounded-lg px-3 py-2 ml-8">
                         <span className="text-xs text-slate-400 font-medium">Ta réponse : </span>
                         <span className="text-sm text-slate-700"><Markdown content={q.reponse_eleve} inline /></span>
+                      </div>
+                    )}
+
+                    {q.elements && q.elements.length > 0 && (
+                      <div className="ml-8 flex flex-wrap gap-1.5">
+                        {q.elements.map((el, j) => (
+                          el.correct ? (
+                            <span key={j} className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded-lg">✓ {el.texte}</span>
+                          ) : (
+                            <span key={j} className="inline-flex items-center gap-1 text-xs font-medium text-rose-600 bg-rose-50 border border-rose-100 px-2 py-1 rounded-lg">
+                              ✗ <span className="line-through">{el.texte}</span>
+                              {el.correction && <span className="text-emerald-700">→ {el.correction}</span>}
+                            </span>
+                          )
+                        ))}
                       </div>
                     )}
 

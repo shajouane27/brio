@@ -50,13 +50,18 @@ ${controleContent}
 
 Tu viens de recevoir la photo de la COPIE DE L'ÉLÈVE (visible dans l'image).
 
-Ta mission : corriger cette copie de façon détaillée et pédagogique.
+Ta mission : corriger cette copie en suivant CETTE MÉTHODE pour CHAQUE question.
 
-INSTRUCTIONS DE CORRECTION :
-1. Identifie chaque question du sujet (dans l'ordre)
-2. Pour chaque question, lis la réponse de l'élève visible sur la copie
-3. Évalue la réponse avec le barème du sujet (notation ${notationLabel})
-4. Donne un retour pédagogique court (max 2 phrases)
+1. Détecte le type de réponse :
+   - Réponse UNIQUE (QCM, vrai/faux) → corrige globalement.
+   - Réponse MULTIPLE (conjugaison, texte à trous, liste, "entoure") → corrige ÉLÉMENT PAR ÉLÉMENT.
+   - Réponse RÉDIGÉE (phrase, paragraphe) → évalue le SENS global.
+
+2. Pour les réponses MULTIPLES : décompose (par ligne, virgule, tiret, numéro), corrige chaque élément (✓ ou ✗), et calcule les points PARTIELS proportionnellement (ex : 4 bons sur 6 = 4/6 × barème ; points_obtenus peut être décimal).
+
+3. Pour CHAQUE erreur, fournis TOUJOURS : la bonne réponse, l'explication de la règle adaptée au niveau ${niveau ?? 'lycée'}, et un exemple concret pour mémoriser.
+
+4. Note finale = somme des points partiels, barème détaillé question par question, en notation ${notationLabel}.
 
 FORMAT DE RÉPONSE (JSON strict, sans markdown) :
 {
@@ -67,18 +72,22 @@ FORMAT DE RÉPONSE (JSON strict, sans markdown) :
       "numero": "1",
       "enonce_court": "Début de la question (max 60 car.)",
       "reponse_eleve": "Ce que l'élève a écrit (résumé si long)",
-      "points_obtenus": "X",
+      "points_obtenus": "X",                 // peut être décimal (points partiels)
       "points_max": "Y",
       "correct": true,
+      "elements": [                           // UNIQUEMENT pour réponses multiples, sinon []
+        { "texte": "élément de l'élève", "correct": true, "correction": "" },
+        { "texte": "élément faux", "correct": false, "correction": "la bonne réponse" }
+      ],
       "bon_element": "Ce qui est juste dans la réponse",
       "a_ameliorer": "Ce qui manque ou est incorrect (vide si correct)",
-      "commentaire_peda": "Commentaire pédagogique bref"
+      "commentaire_peda": "Pour chaque erreur : la bonne réponse + la règle + un exemple concret"
     }
   ]
 }
 
-Si une question n'a pas de réponse visible, indique reponse_eleve: "Sans réponse" et points_obtenus: "0".
-Sois encourageant et constructif dans tes commentaires.`,
+Si une question n'a pas de réponse visible, indique reponse_eleve: "Sans réponse", points_obtenus: "0", elements: [].
+Sois encourageant et constructif.`,
             },
           ],
         },

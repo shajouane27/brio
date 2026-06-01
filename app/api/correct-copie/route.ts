@@ -55,7 +55,22 @@ Voici les RÉPONSES DE L'ÉLÈVE (saisies au clavier) :
 ${copie}
 ---
 
-Corrige cette copie question par question (notation ${notationLabel}). Sois précis, encourageant et pédagogique : en cas d'erreur, explique brièvement la bonne réponse.
+Corrige cette copie (notation ${notationLabel}) en suivant CETTE MÉTHODE pour CHAQUE question :
+
+1. Détecte le type de réponse :
+   - Réponse UNIQUE (QCM, vrai/faux) → corrige globalement (juste ou faux).
+   - Réponse MULTIPLE (conjugaison, texte à trous, liste, "entoure") → corrige ÉLÉMENT PAR ÉLÉMENT.
+   - Réponse RÉDIGÉE (phrase, paragraphe) → évalue le SENS global.
+
+2. Pour les réponses MULTIPLES : décompose la réponse (par ligne, virgule, tiret ou numéro), corrige chaque élément (✓ ou ✗), et calcule les points PARTIELS proportionnellement.
+   Exemple : 4 bons éléments sur 6 attendus = 4/6 × le barème de la question (points_obtenus peut être décimal).
+
+3. Pour CHAQUE erreur (élément faux ou réponse fausse), fournis TOUJOURS :
+   - la bonne réponse,
+   - l'explication de la règle en langage adapté au niveau ${niveau ?? 'lycée'},
+   - un exemple concret pour mémoriser.
+
+4. Note finale = somme de tous les points partiels. Détaille le barème question par question. Note globale en notation ${notationLabel}.
 
 FORMAT DE RÉPONSE (JSON strict, sans markdown) :
 {
@@ -66,17 +81,21 @@ FORMAT DE RÉPONSE (JSON strict, sans markdown) :
       "numero": "1",
       "enonce_court": "Début de la question (max 60 car.)",
       "reponse_eleve": "Réponse de l'élève (résumé si long)",
-      "points_obtenus": "X",
+      "points_obtenus": "X",                 // peut être décimal (points partiels)
       "points_max": "Y",
       "correct": true,
+      "elements": [                           // UNIQUEMENT pour réponses multiples, sinon []
+        { "texte": "élément de réponse de l'élève", "correct": true, "correction": "" },
+        { "texte": "élément faux", "correct": false, "correction": "la bonne réponse" }
+      ],
       "bon_element": "Ce qui est juste",
       "a_ameliorer": "Ce qui manque ou est incorrect (vide si correct)",
-      "commentaire_peda": "Explication pédagogique brève, avec la bonne réponse en cas d'erreur"
+      "commentaire_peda": "Pour chaque erreur : la bonne réponse + la règle (adaptée au niveau) + un exemple concret pour mémoriser"
     }
   ]
 }
 
-Si une réponse est vide, mets reponse_eleve: "Sans réponse" et points_obtenus: "0".`,
+Si une réponse est vide, mets reponse_eleve: "Sans réponse", points_obtenus: "0", elements: [].`,
       }],
     })
 
