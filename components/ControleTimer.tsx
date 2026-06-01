@@ -27,6 +27,7 @@ export default function ControleTimer({ duree }: ControleTimerProps) {
   const totalSeconds = dureeToMinutes(duree) * 60
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds)
   const [running, setRunning] = useState(true)
+  const [hidden, setHidden] = useState(false)
   const vibratedAt5 = useRef(false)
   const vibratedAtEnd = useRef(false)
 
@@ -73,6 +74,20 @@ export default function ControleTimer({ duree }: ControleTimerProps) {
     ? { card: 'bg-accent-50 border-accent-200', time: 'text-accent-600', label: 'text-accent-600', dot: 'bg-accent-500' }
     : { card: 'bg-emerald-50 border-emerald-200', time: 'text-emerald-600', label: 'text-emerald-600', dot: 'bg-emerald-500' }
 
+  // Masqué : petite pastille discrète pour le réafficher
+  if (hidden) {
+    return (
+      <div className="sticky top-16 z-30 mb-2 flex justify-end">
+        <button
+          onClick={() => setHidden(false)}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-full hover:bg-slate-50 transition-colors"
+        >
+          ⏱ Afficher le minuteur
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="sticky top-16 z-30 mb-2">
       <div className={`rounded-2xl border shadow-md ${theme.card} px-4 py-3`}>
@@ -117,6 +132,15 @@ export default function ControleTimer({ duree }: ControleTimerProps) {
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setHidden(true)}
+              aria-label="Masquer le minuteur"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-white/70 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
