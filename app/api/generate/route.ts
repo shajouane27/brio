@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { CLAUDE_MODEL } from '@/lib/model'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { getCountryConfig } from '@/lib/countries'
+import { getCountryConfig, isPrimaire, isCollege } from '@/lib/countries'
 
 export const maxDuration = 60
 export const runtime = 'nodejs'
@@ -57,6 +57,16 @@ export async function POST(request: NextRequest) {
     const countryConfig = getCountryConfig(pays || (detectedLang === 'pt' ? 'pt-PT' : null))
     const langue = countryConfig.langue_generation
     const formatPeda = countryConfig.format_pedagogique.trim()
+    const trad = countryConfig.tradition_litteraire
+
+    // Niveau scolaire pour les règles de texte support
+    const niveauStr = niveau || 'lycée'
+    const niveauCategorie = isPrimaire(niveauStr, countryConfig) ? 'primaire'
+      : isCollege(niveauStr, countryConfig) ? 'college'
+      : 'lycee'
+    const tradNiveau = niveauCategorie === 'primaire' ? trad.auteurs_primaire
+      : niveauCategorie === 'college' ? trad.auteurs_college
+      : trad.auteurs_lycee
 
     // Réutilisation d'un cours sauvegardé : on récupère le contenu + l'historique
     let supabase: SupabaseClient | null = null
@@ -240,6 +250,38 @@ Résultat :
 └─────────────────────────────────────────────────┘
 
 SCHÉMA (si pertinent) : Si une question porte sur un circuit électrique, une molécule, une figure géométrique ou un schéma scientifique, génère le SVG correspondant en code (une balise <svg>…</svg> autonome avec un viewBox défini, sans largeur/hauteur fixes en pixels). Il sera rendu directement dans l'app.
+
+── TEXTE SUPPORT (langue et littérature) ─────────────────────────────────────
+
+DÉTECTION AUTOMATIQUE : Si le cours porte sur l'une de ces notions (dans TOUTE langue) —
+${trad.mots_cles_litterature.trim()}
+— alors tu DOIS générer un texte support AVANT les questions.
+
+Si le cours NE porte PAS sur ces notions (maths, sciences, histoire-géo, etc.) → N'inclus AUCUN texte support.
+
+QUAND GÉNÉRER : Place le texte support IMMÉDIATEMENT après le titre et la consigne générale, et AVANT la première partie (Groupe I / Partie I / etc.).
+
+FORMAT EXACT DU TEXTE SUPPORT (ne modifie pas les séparateurs ─ ni les emojis) :
+📖 ${trad.instruction_lecture.split(' ').slice(0, 3).join(' ').toUpperCase()}
+─────────────────────────────────────────────────────
+[Titre du texte entre guillemets ou sans titre]
+[Texte généré ICI dans la langue du cours — jamais en français pour un cours en portugais]
+─────────────────────────────────────────────────────
+⚠️ ${trad.instruction_lecture}
+
+RÈGLES DE GÉNÉRATION DU TEXTE :
+${tradNiveau.trim()}
+${trad.tradition_poetique ? `\nTRADITION POÉTIQUE (si le cours porte sur la poésie) :\n${trad.tradition_poetique.trim()}` : ''}
+
+TYPE DE TEXTE selon le cours :
+- Cours sur la poésie → poème original dans la tradition poétique du pays, adapté au niveau
+- Cours sur le roman / narrative → extrait narratif dans le style local
+- Cours sur le théâtre → dialogue théâtral
+- Cours sur la grammaire appliquée → texte qui illustre la notion grammaticale étudiée
+- Cours sur la nouvelle → nouvelle courte
+- Cours sur l'essai / argumentation → texte argumentatif ou extrait d'essai
+
+RÈGLE ABSOLUE : Le texte support, son titre, et l'instruction de lecture (⚠️) sont TOUJOURS dans la langue du cours. Si le cours est en portugais, tout est en portugais. Si en anglais, tout est en anglais. JAMAIS de mélange de langues.
 
 RÈGLES GLOBALES OBLIGATOIRES :
 - Une question par ligne minimum ; une réponse par ligne — JAMAIS deux réponses côte à côte.

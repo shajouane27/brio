@@ -18,6 +18,9 @@ const DOTS = /(?:\.{6,}|…{2,}|_{6,})/
 const DOTS_G = /(\.{6,}|…{2,}|_{6,})/g
 const BOX = /[┌┐└┘├┤┬┴┼│─]/
 const CHECKBOX = /^(?:□|☐|◻|\[\s?\]|-\s*\[\s?\])\s*(.*)$/
+const DIVIDER = /^─{5,}$/
+const TEXT_HEADER = /^📖\s*/
+const TEXT_WARN = /^⚠️\s*/
 
 // Rend une ligne contenant des pointillés : texte + traits à compléter, sur UNE ligne.
 function FillLine({ line, k }: { line: string; k: number }) {
@@ -64,16 +67,92 @@ function Table({ rows, k }: { rows: string[]; k: number }) {
   )
 }
 
+/** Regroupe les lignes entre deux séparateurs ─── dans un bloc "texte support" */
+function preprocess(raw: string): string {
+  const lines = raw.split('\n')
+  const out: string[] = []
+  let inBody = false
+
+  for (const l of lines) {
+    const t = l.trim()
+    if (DIVIDER.test(t)) {
+      if (!inBody) {
+        out.push('__TEXT_OPEN__')
+        inBody = true
+      } else {
+        out.push('__TEXT_CLOSE__')
+        inBody = false
+      }
+      continue
+    }
+    out.push(l)
+  }
+  if (inBody) out.push('__TEXT_CLOSE__')
+  return out.join('\n')
+}
+
 export default function ControleView({ content, niveau, notation }: Props) {
   const noteSuffix = notation === '/100' ? '/ 100' : notation === 'lettres' ? '' : '/ 20'
-  const lines = content.split('\n')
+  const preprocessed = preprocess(content)
+  const lines = preprocessed.split('\n')
   const blocks: React.ReactNode[] = []
   let key = 0
+  let textBodyLines: string[] = []
+  let inTextBody = false
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim()
+    const rawLine = lines[i]
+    const trimmed = rawLine.trim()
+
+    // Corps du texte support (entre __TEXT_OPEN__ et __TEXT_CLOSE__)
+    if (trimmed === '__TEXT_OPEN__') { inTextBody = true; textBodyLines = []; continue }
+    if (trimmed === '__TEXT_CLOSE__') {
+      inTextBody = false
+      blocks.push(
+        <div key={key++} className="my-2 bg-slate-50 rounded-xl border border-slate-200 px-5 py-4 text-base sm:text-lg text-slate-800 leading-relaxed whitespace-pre-wrap italic">
+          {textBodyLines.join('\n').trim()}
+        </div>
+      )
+      textBodyLines = []
+      continue
+    }
+    if (inTextBody) { textBodyLines.push(rawLine); continue }
+
+    const line = trimmed // canonical trimmed line used below
 
     if (!line || line === '---') { blocks.push(<div key={key++} className="h-3" />); continue }
+
+    // ── Texte support ────────────────────────────────────────────────────────
+
+    // En-tête 📖 TEXTE / TEXTO / TEXT
+    if (TEXT_HEADER.test(line)) {
+      const label = line.replace(TEXT_HEADER, '').trim()
+      blocks.push(
+        <div key={key++} className="flex items-center gap-2 mt-6 mb-1">
+          <span className="text-lg">📖</span>
+          <span className="font-extrabold text-base sm:text-lg text-slate-900 uppercase tracking-wide">{label}</span>
+        </div>
+      )
+      continue
+    }
+
+    // Séparateur ──── (restants non consommés par le préprocesseur)
+    if (DIVIDER.test(line)) {
+      blocks.push(<hr key={key++} className="my-1 border-slate-400" />)
+      continue
+    }
+
+    // Instruction ⚠️ "Lisez / Leia / Read attentivement"
+    if (TEXT_WARN.test(line)) {
+      const txt = line.replace(TEXT_WARN, '').trim()
+      blocks.push(
+        <div key={key++} className="mt-2 mb-5 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <span className="text-base shrink-0">⚠️</span>
+          <span className="text-sm sm:text-base font-semibold text-amber-800">{txt}</span>
+        </div>
+      )
+      continue
+    }
 
     // Tableau (lignes | … |)
     if (/^\|.*\|$/.test(line)) {
