@@ -70,24 +70,28 @@ FORMAT DE RÉPONSE (JSON strict, sans markdown) :
   "questions": [
     {
       "numero": "1",
+      "type": "conjugaison|qcm|vrai_faux|redaction|texte_a_trous|liste|calcul|autre",
       "enonce_court": "Début de la question (max 60 car.)",
       "reponse_eleve": "Ce que l'élève a écrit (résumé si long)",
-      "points_obtenus": "X",                 // peut être décimal (points partiels)
-      "points_max": "Y",
-      "correct": true,
-      "elements": [                           // UNIQUEMENT pour réponses multiples, sinon []
-        { "texte": "élément de l'élève", "correct": true, "correction": "" },
-        { "texte": "élément faux", "correct": false, "correction": "la bonne réponse" }
+      "elements": [
+        { "attendu": "Je suis", "reponse": "Je suis", "correct": true, "points": 0.33, "explication": "" },
+        { "attendu": "Tu es", "reponse": "Tu est", "correct": false, "points": 0, "explication": "On écrit « es » (verbe être)." }
       ],
-      "bon_element": "Ce qui est juste dans la réponse",
-      "a_ameliorer": "Ce qui manque ou est incorrect (vide si correct)",
-      "commentaire_peda": "Pour chaque erreur : la bonne réponse + la règle + un exemple concret"
+      "points_obtenus": 0.33,
+      "points_max": 2,
+      "correct": false,
+      "pourquoi": "Explication globale de la règle, adaptée au niveau",
+      "exemple": "Un exemple concret pour mémoriser"
     }
   ]
 }
 
-Si une question n'a pas de réponse visible, indique reponse_eleve: "Sans réponse", points_obtenus: "0", elements: [].
-Sois encourageant et constructif.`,
+Règles pour "elements" :
+- Réponse MULTIPLE (conjugaison, texte à trous, liste, entoure) : un objet par élément attendu, avec "attendu", "reponse" (ce qu'a écrit l'élève), "correct", "points" partiels, "explication" si faux.
+- Réponse UNIQUE (QCM, vrai/faux) : un seul élément.
+- Réponse RÉDIGÉE : "elements" peut être [] (sens global via points_obtenus + pourquoi).
+- "points_obtenus" = somme des "points". "pourquoi"/"exemple" uniquement en cas d'erreur.
+Si une question n'a pas de réponse visible : reponse_eleve "Sans réponse", points_obtenus 0, elements [].`,
             },
           ],
         },

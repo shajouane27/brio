@@ -204,8 +204,8 @@ export default function ControleFiller({ controleContent, notation, niveau, dure
   }
 
   if (phase === 'done' && result) {
-    const obtained = result.questions.reduce((s, q) => s + parseFloat(q.points_obtenus || '0'), 0)
-    const max = result.questions.reduce((s, q) => s + parseFloat(q.points_max || '0'), 0)
+    const obtained = result.questions.reduce((s, q) => s + (parseFloat(String(q.points_obtenus ?? 0)) || 0), 0)
+    const max = result.questions.reduce((s, q) => s + (parseFloat(String(q.points_max ?? 0)) || 0), 0)
     const harder = max > 0 && obtained / max > 0.7
     return (
       <div className="mt-6 space-y-4">
