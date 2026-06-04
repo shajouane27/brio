@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { CLAUDE_MODEL } from '@/lib/model'
 import { createClient } from '@/lib/supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { getCountryConfig } from '@/lib/countries'
 
 export const maxDuration = 60
 export const runtime = 'nodejs'
@@ -49,8 +50,13 @@ function extractControleQuestions(md: string): string[] {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { type, duree, notation, coursId, harder } = body
+    const { type, duree, notation, coursId, harder, pays, detectedLang } = body
     let { courseText, niveau } = body
+
+    // Config pays (utilisé pour formater les prompts)
+    const countryConfig = getCountryConfig(pays || (detectedLang === 'pt' ? 'pt-PT' : null))
+    const langue = countryConfig.langue_generation
+    const formatPeda = countryConfig.format_pedagogique.trim()
 
     // Réutilisation d'un cours sauvegardé : on récupère le contenu + l'historique
     let supabase: SupabaseClient | null = null
@@ -85,8 +91,12 @@ export async function POST(request: NextRequest) {
     let prompt = ''
 
     if (type === 'exercices') {
-      prompt = `Tu es un professeur expert du système éducatif français pour le niveau ${niveau || 'lycée'}.
+      prompt = `Tu es un professeur expert pour le niveau ${niveau || 'lycée'}.
 
+CONTEXTE PÉDAGOGIQUE :
+${formatPeda}
+
+Réponds UNIQUEMENT en ${langue}.
 À partir du cours suivant, génère 5 exercices variés et progressifs (facile → difficile), adaptés au niveau ${niveau || 'lycée'}.
 
 COURS :
@@ -111,9 +121,12 @@ RÈGLES :
 - N'écris JAMAIS la réponse dans le champ "question".`
 
     } else if (type === 'fiche') {
-      prompt = `Tu es un professeur du système éducatif français pour le niveau ${niveau || 'lycée'}.
+      prompt = `Tu es un professeur pour le niveau ${niveau || 'lycée'}.
 
-À partir du cours suivant, rédige une FICHE DE RÉVISION synthétique, lisible en 5 minutes maximum.
+CONTEXTE PÉDAGOGIQUE :
+${formatPeda}
+
+Rédige UNIQUEMENT en ${langue} une FICHE DE RÉVISION synthétique, lisible en 5 minutes maximum.
 
 COURS :
 ${courseText}
@@ -155,9 +168,12 @@ RÈGLES :
                             notation === '/100' ? 'noté sur 100 points' :
                             'noté par lettres (A, B, C, D, E)'
 
-      prompt = `Tu es un professeur du système éducatif français pour le niveau ${niveau || 'lycée'}.
+      prompt = `Tu es un professeur pour le niveau ${niveau || 'lycée'}.
 
-À partir du cours suivant, rédige un sujet de contrôle qui ressemble EXACTEMENT à un vrai contrôle d'école française : sobre, professionnel, sans émojis, sans gras inutile.
+CONTEXTE PÉDAGOGIQUE :
+${formatPeda}
+
+Rédige UNIQUEMENT en ${langue} un sujet de contrôle : sobre, professionnel, sans émojis, sans gras inutile.
 
 COURS :
 ${courseText}
@@ -167,7 +183,7 @@ PARAMÈTRES :
 - Notation : ${notationLabel}
 - Niveau : ${niveau || 'lycée'}
 
-N'inclus PAS d'en-tête Nom/Prénom/Date/Note : il est ajouté automatiquement. Commence directement par le titre.
+N'inclus PAS d'en-tête : il est ajouté automatiquement. Commence directement par le titre.
 
 Tu dois DÉTECTER le type de chaque question et appliquer le format EXACT correspondant ci-dessous. Réponds en texte/Markdown, UNE SEULE chose par ligne.
 

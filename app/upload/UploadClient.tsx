@@ -20,11 +20,9 @@ const MAX_PHOTOS = 10
 
 interface UploadClientProps {
   niveau: string
-  /** Si fourni (réutilisation d'un cours sauvegardé), on démarre à l'étape 2. */
+  pays?: string
   initialCourseText?: string
-  /** Id du cours réutilisé — pour rattacher la fiche de révision au bon cours. */
   initialCoursId?: string
-  /** Action à déclencher automatiquement depuis la bibliothèque. */
   initialAction?: 'exercices' | 'controle'
 }
 
@@ -40,7 +38,7 @@ async function prepareFile(file: File): Promise<PhotoItem> {
 
 type GenType = 'exercices' | 'controle' | 'fiche'
 
-export default function UploadClient({ niveau, initialCourseText, initialCoursId, initialAction }: UploadClientProps) {
+export default function UploadClient({ niveau, pays, initialCourseText, initialCoursId, initialAction }: UploadClientProps) {
   const [step, setStep] = useState<Step>(initialCourseText ? 'extracted' : 'upload')
   const [photos, setPhotos] = useState<PhotoItem[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -55,6 +53,7 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
   const [showControleModal, setShowControleModal] = useState(false)
   const [controleOptions, setControleOptions] = useState<{ duree: string; notation: string } | null>(null)
   const [illustrations, setIllustrations] = useState<{ images: Illustration[]; matiere: string | null }>({ images: [], matiere: null })
+  const [detectedLang, setDetectedLang] = useState<string | null>(null)
   const [showDictee, setShowDictee] = useState(false)
   const [error, setError] = useState('')
   const isPrimaire = PRIMAIRE.some((n) => niveau.includes(n))
@@ -148,7 +147,7 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
 
       // Lecture robuste : certaines erreurs renvoient du HTML, pas du JSON
       const raw = await res.text()
-      let data: { text?: string; error?: string }
+      let data: { text?: string; error?: string; detectedLang?: string }
       try {
         data = JSON.parse(raw)
       } catch {
@@ -157,6 +156,7 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
 
       if (!res.ok) throw new Error(data.error || `Erreur serveur (${res.status})`)
       setCourseText(data.text ?? '')
+      if (data.detectedLang) setDetectedLang(data.detectedLang)
       setStep('extracted')
       if (data.text) fetchIllustrations(data.text)
 
@@ -197,6 +197,8 @@ export default function UploadClient({ niveau, initialCourseText, initialCoursId
           type,
           courseText,
           niveau,
+          pays: pays ?? 'fr-FR',
+          detectedLang: detectedLang ?? null,
           coursId: coursIdRef.current ?? undefined,
           harder: harder ?? false,
           ...(options ?? {}),

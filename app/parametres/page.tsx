@@ -20,12 +20,13 @@ export default async function ParametresPage() {
   const prenom = profile?.prenom ?? user.user_metadata?.prenom ?? 'Élève'
   const profileType = profile?.profile_type ?? user.user_metadata?.profile_type ?? 'eleve'
   const niveau = profile?.niveau ?? user.user_metadata?.niveau
+  const pays = profile?.pays ?? 'fr-FR'
 
   if (profileType !== 'eleve') redirect('/dashboard')
 
   return (
     <div className="min-h-screen">
-      <Navbar prenom={prenom} profileType={profileType} />
+      <Navbar prenom={prenom} profileType={profileType} pays={pays} />
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="text-slate-400 hover:text-slate-600 transition-colors">←</Link>

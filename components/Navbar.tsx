@@ -4,13 +4,15 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { t, langFromPays, type TranslationKey } from '@/lib/i18n'
 
 interface NavbarProps {
   prenom?: string
   profileType?: string
+  pays?: string
 }
 
-export default function Navbar({ prenom, profileType }: NavbarProps) {
+export default function Navbar({ prenom, profileType, pays }: NavbarProps) {
   const router = useRouter()
   const supabase = createClient()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -18,6 +20,7 @@ export default function Navbar({ prenom, profileType }: NavbarProps) {
 
   const isParent = profileType === 'parent'
   const initial = (prenom?.charAt(0) ?? '?').toUpperCase()
+  const lang = langFromPays(pays)
 
   // Ferme le menu au clic extérieur
   useEffect(() => {
@@ -50,9 +53,9 @@ export default function Navbar({ prenom, profileType }: NavbarProps) {
         {/* Navigation centrale (élève uniquement) */}
         {!isParent && (
           <div className="hidden sm:flex items-center gap-1">
-            <NavLink href="/dashboard" label="Accueil" />
-            <NavLink href="/upload" label="Analyser un cours" />
-            <NavLink href="/cours" label="Mes cours" />
+            <NavLink href="/dashboard" label={t('accueil', lang)} />
+            <NavLink href="/upload" label={t('analyser_cours', lang)} />
+            <NavLink href="/cours" label={t('mes_cours', lang)} />
           </div>
         )}
 
@@ -84,11 +87,11 @@ export default function Navbar({ prenom, profileType }: NavbarProps) {
 
               {/* Liens */}
               <div className="py-1">
-                <MenuItem href="/dashboard" icon="🏠" label="Accueil" onClick={() => setMenuOpen(false)} />
+                <MenuItem href="/dashboard" icon="🏠" label={t('accueil', lang)} onClick={() => setMenuOpen(false)} />
                 {!isParent && (
                   <>
-                    <MenuItem href="/cours" icon="📚" label="Mes cours" onClick={() => setMenuOpen(false)} />
-                    <MenuItem href="/parametres" icon="⚙️" label="Paramètres" onClick={() => setMenuOpen(false)} />
+                    <MenuItem href="/cours" icon="📚" label={t('mes_cours', lang)} onClick={() => setMenuOpen(false)} />
+                    <MenuItem href="/parametres" icon="⚙️" label={t('parametres', lang)} onClick={() => setMenuOpen(false)} />
                   </>
                 )}
               </div>
@@ -100,7 +103,7 @@ export default function Navbar({ prenom, profileType }: NavbarProps) {
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                 >
                   <span className="text-base">↪</span>
-                  Déconnexion
+                  {t('deconnexion', lang)}
                 </button>
               </div>
             </div>

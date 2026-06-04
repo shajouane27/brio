@@ -7,12 +7,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
+import { COUNTRIES, getCountryConfig } from '@/lib/countries'
+
 type ProfileType = 'eleve' | 'parent'
 
-const NIVEAUX = [
-  'CP', 'CE1', 'CE2', 'CM1', 'CM2',
-  '6ème', '5ème', '4ème', '3ème',
-  'Seconde', 'Première', 'Terminale',
+const PAYS_OPTIONS = [
+  { value: 'fr-FR', flag: '🇫🇷', label: 'France' },
+  { value: 'pt-PT', flag: '🇵🇹', label: 'Portugal' },
 ]
 
 export default function RegisterPage() {
@@ -21,10 +22,19 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [prenom, setPrenom] = useState('')
-  const [niveau, setNiveau] = useState(NIVEAUX[0])
+  const [pays, setPays] = useState('fr-FR')
+  const [niveau, setNiveau] = useState(getCountryConfig('fr-FR').niveaux[0])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  // Quand le pays change, réinitialise le niveau au 1er de ce pays
+  function handlePaysChange(newPays: string) {
+    setPays(newPays)
+    setNiveau(getCountryConfig(newPays).niveaux[0])
+  }
+
+  const niveauxDuPays = getCountryConfig(pays).niveaux
 
   function handleProfileChoice(type: ProfileType) {
     setProfileType(type)
@@ -46,6 +56,7 @@ export default function RegisterPage() {
           prenom,
           profile_type: profileType,
           niveau: profileType === 'eleve' ? niveau : null,
+          pays,
         },
       },
     })
@@ -63,6 +74,7 @@ export default function RegisterPage() {
         profile_type: profileType,
         niveau: profileType === 'eleve' ? niveau : null,
         email,
+        pays,
       })
       router.push('/dashboard')
       router.refresh()
@@ -132,6 +144,24 @@ export default function RegisterPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Pays */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Pays</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PAYS_OPTIONS.map((p) => (
+                      <button
+                        key={p.value}
+                        type="button"
+                        onClick={() => handlePaysChange(p.value)}
+                        className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-all ${pays === p.value ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
+                      >
+                        <span className="text-xl">{p.flag}</span>
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Prénom</label>
                   <input
@@ -152,7 +182,7 @@ export default function RegisterPage() {
                       onChange={(e) => setNiveau(e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900 bg-white"
                     >
-                      {NIVEAUX.map((n) => (
+                      {niveauxDuPays.map((n) => (
                         <option key={n} value={n}>{n}</option>
                       ))}
                     </select>

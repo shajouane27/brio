@@ -55,20 +55,23 @@ export async function POST(request: NextRequest) {
     const pageWord = files.length === 1 ? 'page' : 'pages'
     contentBlocks.push({
       type: 'text',
-      text: `Tu es un assistant pédagogique expert du système éducatif français.
+      text: `Tu es un assistant pédagogique.
 Tu viens de recevoir ${files.length} ${pageWord} d'un cours scolaire, dans l'ordre indiqué.
 
 Ta mission : extraire et reconstituer le contenu complet du cours en une seule synthèse cohérente.
 
 Instructions :
 - Retranscris fidèlement le contenu de TOUTES les pages dans l'ordre
-- Fusionne les idées qui se continuent d'une page à l'autre (ne découpe pas artificiellement par page)
+- Fusionne les idées qui se continuent d'une page à l'autre
 - Conserve la structure logique globale : titre du cours, plan, définitions, formules, exemples
 - Si une phrase commence sur une page et finit sur la suivante, reconstitue-la
 - Si des formules mathématiques ou scientifiques sont présentes, transcris-les clairement
 - Ne rajoute rien, ne reformule pas : extrais uniquement ce qui est écrit/visible
+- TRÈS IMPORTANT : conserve la langue du cours (français, portugais, anglais…) — retranscris dans la même langue, ne traduis pas.
 
-Réponds uniquement avec le contenu extrait, sans commentaire ni mention des numéros de pages.`,
+À la TOUTE FIN de ta réponse, ajoute une seule ligne au format exact : LANG:XX (ex: LANG:fr ou LANG:pt) pour indiquer la langue du cours détectée.
+
+Réponds avec le contenu extrait, puis la ligne LANG:XX.`,
     })
 
     const message = await anthropic.messages.create({
@@ -77,8 +80,14 @@ Réponds uniquement avec le contenu extrait, sans commentaire ni mention des num
       messages: [{ role: 'user', content: contentBlocks }],
     })
 
-    const text = message.content[0]?.type === 'text' ? message.content[0].text : ''
-    return NextResponse.json({ text })
+    let text = message.content[0]?.type === 'text' ? message.content[0].text : ''
+    // Extrait le code langue (LANG:xx) et le retire du texte affiché
+    let detectedLang: string | null = null
+    text = text.replace(/\s*LANG:([a-z]{2})\s*$/im, (_, lang) => {
+      detectedLang = lang.toLowerCase()
+      return ''
+    }).trimEnd()
+    return NextResponse.json({ text, detectedLang })
   } catch (error) {
     console.error('Extract error:', error)
     // Remonte le vrai message (erreur API Anthropic, clé manquante, format refusé…)

@@ -22,6 +22,7 @@ export default async function UploadPage({
   const prenom = profile?.prenom ?? user.user_metadata?.prenom ?? 'Élève'
   const niveau = profile?.niveau ?? user.user_metadata?.niveau ?? 'Lycée'
   const profileType = profile?.profile_type ?? user.user_metadata?.profile_type ?? 'eleve'
+  const pays = profile?.pays ?? 'fr-FR'
 
   // Réutilisation d'un cours sauvegardé (RLS garantit que c'est bien le sien)
   const { coursId, action } = await searchParams
@@ -38,10 +39,11 @@ export default async function UploadPage({
 
   return (
     <div className="min-h-screen">
-      <Navbar prenom={prenom} profileType={profileType} />
+      <Navbar prenom={prenom} profileType={profileType} pays={pays} />
       <main className="max-w-3xl mx-auto px-4 py-8">
         <UploadClient
           niveau={niveau}
+          pays={pays}
           initialCourseText={initialCourseText}
           initialCoursId={coursId}
           initialAction={initialAction}
