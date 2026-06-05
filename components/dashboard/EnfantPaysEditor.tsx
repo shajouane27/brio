@@ -1,11 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-
-const PAYS_OPTIONS = [
-  { value: 'fr-FR', flag: '🇫🇷', label: 'France' },
-  { value: 'pt-PT', flag: '🇵🇹', label: 'Portugal' },
-]
+import { COUNTRY_OPTIONS } from '@/lib/countries'
+import CountrySelector from '@/components/CountrySelector'
 
 interface EnfantPaysEditorProps {
   childId: string
@@ -55,23 +52,11 @@ export default function EnfantPaysEditor({
           Modifier le pays (détermine la langue et le format des contrôles)
         </label>
 
-        <div className="grid grid-cols-2 gap-2">
-          {PAYS_OPTIONS.map((p) => (
-            <button
-              key={p.value}
-              type="button"
-              onClick={() => { setSelected(p.value); setSuccess(false) }}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-all ${
-                selected === p.value
-                  ? 'border-brand-500 bg-brand-50 text-brand-700'
-                  : 'border-slate-200 text-slate-600 hover:border-slate-300'
-              }`}
-            >
-              <span className="text-xl">{p.flag}</span>
-              {p.label}
-            </button>
-          ))}
-        </div>
+        <CountrySelector
+          countries={[...COUNTRY_OPTIONS]}
+          value={selected}
+          onChange={(id) => { setSelected(id); setSuccess(false) }}
+        />
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

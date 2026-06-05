@@ -153,6 +153,13 @@ export const PT_PT: CountryConfig = {
 
 export const COUNTRIES: CountryConfig[] = [FR_FR, PT_PT]
 
+/** Liste légère utilisée par CountrySelector — ajouter un pays ici suffit. */
+export const COUNTRY_OPTIONS = [
+  { id: 'fr-FR', nom: 'France',   flag: '🇫🇷', langue: 'fr' },
+  { id: 'pt-PT', nom: 'Portugal', flag: '🇵🇹', langue: 'pt' },
+  // ← Ajouter ici les prochains pays
+] as const
+
 export function getCountryConfig(pays?: string | null): CountryConfig {
   return COUNTRIES.find((c) => c.pays_id === pays) ?? FR_FR
 }

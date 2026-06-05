@@ -7,14 +7,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-import { COUNTRIES, getCountryConfig } from '@/lib/countries'
+import { COUNTRY_OPTIONS, getCountryConfig } from '@/lib/countries'
+import CountrySelector from '@/components/CountrySelector'
 
 type ProfileType = 'eleve' | 'parent'
-
-const PAYS_OPTIONS = [
-  { value: 'fr-FR', flag: '🇫🇷', label: 'France' },
-  { value: 'pt-PT', flag: '🇵🇹', label: 'Portugal' },
-]
 
 export default function RegisterPage() {
   const [step, setStep] = useState<1 | 2>(1)
@@ -147,19 +143,11 @@ export default function RegisterPage() {
                 {/* Pays */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1.5">Pays</label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {PAYS_OPTIONS.map((p) => (
-                      <button
-                        key={p.value}
-                        type="button"
-                        onClick={() => handlePaysChange(p.value)}
-                        className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 font-medium text-sm transition-all ${pays === p.value ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 text-slate-600 hover:border-slate-300'}`}
-                      >
-                        <span className="text-xl">{p.flag}</span>
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
+                  <CountrySelector
+                    countries={[...COUNTRY_OPTIONS]}
+                    value={pays}
+                    onChange={handlePaysChange}
+                  />
                 </div>
 
                 <div>
