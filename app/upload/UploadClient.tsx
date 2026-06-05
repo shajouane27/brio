@@ -59,11 +59,12 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
   const isPrimaire = PRIMAIRE.some((n) => niveau.includes(n))
 
   // Récupère des illustrations Wikimedia + la matière (arrière-plan, non bloquant)
-  const fetchIllustrations = useCallback((text: string) => {
+  // detectedLangForFetch est en closure mais se met à jour via le ref
+  const fetchIllustrations = useCallback((text: string, lang?: string | null) => {
     fetch('/api/illustrations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ courseText: text, niveau }),
+      body: JSON.stringify({ courseText: text, niveau, detectedLang: lang ?? null }),
     })
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => { if (d) setIllustrations({ images: d.images ?? [], matiere: d.matiere ?? null }) })
@@ -156,9 +157,10 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
 
       if (!res.ok) throw new Error(data.error || `Erreur serveur (${res.status})`)
       setCourseText(data.text ?? '')
-      if (data.detectedLang) setDetectedLang(data.detectedLang)
+      const lang = data.detectedLang ?? null
+      if (lang) setDetectedLang(lang)
       setStep('extracted')
-      if (data.text) fetchIllustrations(data.text)
+      if (data.text) fetchIllustrations(data.text, lang)
 
       // Sauvegarde automatique du cours dans la bibliothèque (en arrière-plan)
       if (data.text) {
@@ -256,7 +258,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
   useEffect(() => {
     if (didInit.current) return
     didInit.current = true
-    if (initialCourseText) fetchIllustrations(initialCourseText)
+    if (initialCourseText) fetchIllustrations(initialCourseText, null)
     if (initialAction && initialCourseText) {
       if (initialAction === 'exercices') handleGenerate('exercices')
       else if (initialAction === 'controle') setShowControleModal(true)

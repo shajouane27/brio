@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { CLAUDE_MODEL } from '@/lib/model'
 import { detectMatiere } from '@/lib/matiere'
+import { searchWikimedia, type WikimediaResult, type VisualType } from '@/services/wikimedia'
 
 export const maxDuration = 30
 export const runtime = 'nodejs'
@@ -9,19 +10,37 @@ export const runtime = 'nodejs'
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 // Matières pour lesquelles on cherche des illustrations
-const VISUAL_MATIERES = ['Histoire-Géographie', 'Histoire', 'Géographie', 'SVT', 'Physique-Chimie']
+const VISUAL_MATIERES = [
+  'Histoire-Géographie', 'Histoire', 'Géographie',
+  'SVT', 'Physique-Chimie',
+  'Arts plastiques', 'Histoire des arts', 'Art',
+]
 
-interface Concept { page: string; legende: string }
-interface Illustration {
+interface ConceptIA {
+  terme_recherche: string   // en anglais pour meilleur rappel sur Wikipedia
+  terme_local?: string      // dans la langue du cours (pour la légende)
+  type: VisualType
+  pertinence: string
+}
+
+export interface IllustrationResult extends WikimediaResult {
   legende: string
-  imageUrl: string
-  sourceUrl: string
-  sourceTitle: string
+  pertinence: string
+}
+
+// Déduit le code langue Wikipedia depuis le detectedLang du cours
+function wikiLang(detectedLang?: string | null): string {
+  if (!detectedLang) return 'en'
+  const map: Record<string, string> = {
+    fr: 'fr', pt: 'pt', en: 'en', es: 'es', de: 'de',
+    it: 'it', ar: 'ar', zh: 'zh', ru: 'ru', ja: 'ja',
+  }
+  return map[detectedLang.toLowerCase().slice(0, 2)] ?? 'en'
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { courseText, niveau } = await request.json()
+    const { courseText, niveau, detectedLang } = await request.json()
     if (!courseText || typeof courseText !== 'string') {
       return NextResponse.json({ images: [], matiere: null })
     }
@@ -31,17 +50,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ images: [], matiere })
     }
 
-    // 1) Concepts visuels clés via Claude (titres de pages Wikipédia anglaises)
-    let concepts: Concept[] = []
+    const lang = wikiLang(detectedLang)
+
+    // ── 1) Identification des concepts visuels par Claude ─────────────────────
+    let concepts: ConceptIA[] = []
     try {
       const msg = await anthropic.messages.create({
         model: CLAUDE_MODEL,
-        max_tokens: 300,
+        max_tokens: 400,
         messages: [{
           role: 'user',
-          content: `Cours de ${matiere} (niveau ${niveau || 'collège'}). Identifie 2 à 3 concepts visuels clés que l'on peut illustrer par une image.
-Pour chacun, donne le TITRE EXACT de la page Wikipédia ANGLAISE la plus pertinente (pour trouver une image libre) et une courte légende en français.
-Réponds UNIQUEMENT en JSON : [{"page":"Photosynthesis","legende":"La photosynthèse"}]
+          content: `Matière : ${matiere}. Niveau : ${niveau || 'collège'}.
+
+Identifie 2 à 3 concepts de ce cours qui BÉNÉFICIERAIENT D'UNE ILLUSTRATION VISUELLE.
+
+Critères d'inclusion :
+- Histoire-Géo : cartes de régions/pays/batailles, portraits de personnages historiques
+- SVT : schémas (cellule, corps humain, cycle), animaux, plantes, roches
+- Physique-Chimie : molécules, circuits, phénomènes physiques
+- Géographie : reliefs, fleuves, villes, climogrammes
+- Arts : œuvres, artistes, mouvements artistiques
+
+Critères d'EXCLUSION (ne rien mettre) : maths pures, conjugaison, orthographe, grammaire.
+
+Réponds UNIQUEMENT en JSON valide :
+[
+  {
+    "terme_recherche": "Photosynthesis",
+    "terme_local": "photosynthèse",
+    "type": "schema",
+    "pertinence": "Ce schéma illustre le processus de transformation"
+  }
+]
+Types possibles : "schema" | "carte" | "photo" | "portrait"
 
 COURS :
 ${courseText.slice(0, 3000)}`,
@@ -51,31 +92,28 @@ ${courseText.slice(0, 3000)}`,
       const s = raw.indexOf('['), e = raw.lastIndexOf(']')
       if (s !== -1 && e !== -1) {
         const parsed = JSON.parse(raw.slice(s, e + 1))
-        if (Array.isArray(parsed)) concepts = parsed.filter((c) => c?.page).slice(0, 3)
+        if (Array.isArray(parsed)) {
+          concepts = parsed
+            .filter((c) => typeof c?.terme_recherche === 'string')
+            .slice(0, 3)
+        }
       }
-    } catch { /* pas de concepts */ }
+    } catch { /* pas de concepts — on continue */ }
 
-    // 2) Image Wikimedia via l'API REST de résumé Wikipédia
-    const images: Illustration[] = []
-    for (const c of concepts) {
-      try {
-        const res = await fetch(
-          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(c.page)}`,
-          { headers: { 'User-Agent': 'BrioApp/1.0 (educational app)', accept: 'application/json' } }
-        )
-        if (!res.ok) continue
-        const j = await res.json()
-        const img: string | undefined = j.thumbnail?.source
-        if (!img) continue // pas de placeholder vide si pas d'image
-        images.push({
-          legende: c.legende || j.title || c.page,
-          imageUrl: img,
-          sourceUrl: j.content_urls?.desktop?.page || `https://en.wikipedia.org/wiki/${encodeURIComponent(c.page)}`,
-          sourceTitle: j.title || c.page,
-        })
-      } catch { /* on ignore ce concept */ }
-    }
+    // ── 2) Recherche Wikimedia en parallèle (multilingue + fallback) ──────────
+    const results = await Promise.all(
+      concepts.map(async (c): Promise<IllustrationResult | null> => {
+        const wiki = await searchWikimedia(c.terme_recherche, lang, c.type)
+        if (!wiki) return null
+        return {
+          ...wiki,
+          legende: c.terme_local || wiki.title,
+          pertinence: c.pertinence || '',
+        }
+      })
+    )
 
+    const images = results.filter((r): r is IllustrationResult => r !== null)
     return NextResponse.json({ images, matiere })
   } catch (error) {
     console.error('Illustrations error:', error)
