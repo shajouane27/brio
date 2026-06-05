@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { t, langFromPays, type TranslationKey } from '@/lib/i18n'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface NavbarProps {
   prenom?: string
@@ -21,6 +22,12 @@ export default function Navbar({ prenom, profileType, pays }: NavbarProps) {
   const isParent = profileType === 'parent'
   const initial = (prenom?.charAt(0) ?? '?').toUpperCase()
   const lang = langFromPays(pays)
+  const { syncPays } = useLanguage()
+
+  // Synchronise le contexte de langue avec le pays du profil authentifié
+  useEffect(() => {
+    if (pays) syncPays(pays)
+  }, [pays, syncPays])
 
   // Ferme le menu au clic extérieur
   useEffect(() => {

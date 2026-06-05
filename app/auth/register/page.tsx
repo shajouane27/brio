@@ -2,13 +2,14 @@
 
 export const dynamic = 'force-dynamic'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 import { COUNTRY_OPTIONS, getCountryConfig } from '@/lib/countries'
 import CountrySelector from '@/components/CountrySelector'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 type ProfileType = 'eleve' | 'parent'
 
@@ -23,6 +24,17 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+
+  // Pré-sélection depuis la détection automatique
+  const { detectedPays, isAutoDetected } = useLanguage()
+  useEffect(() => {
+    if (detectedPays && isAutoDetected) {
+      setPays(detectedPays)
+      setNiveau(getCountryConfig(detectedPays).niveaux[0])
+    }
+  }, [detectedPays, isAutoDetected])
+
+  const detectedCountry = COUNTRY_OPTIONS.find((c) => c.id === detectedPays)
 
   // Quand le pays change, réinitialise le niveau au 1er de ce pays
   function handlePaysChange(newPays: string) {
@@ -148,6 +160,12 @@ export default function RegisterPage() {
                     value={pays}
                     onChange={handlePaysChange}
                   />
+                  {isAutoDetected && detectedCountry && (
+                    <p className="mt-2 text-xs text-slate-500 flex items-center gap-1.5">
+                      <span>{detectedCountry.flag}</span>
+                      Nous avons détecté que vous êtes au {detectedCountry.nom} — vous pouvez modifier ce choix.
+                    </p>
+                  )}
                 </div>
 
                 <div>

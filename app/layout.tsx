@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import LanguageProvider from '@/components/LanguageProvider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -34,7 +35,9 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`h-full ${inter.variable}`}>
       <body className="min-h-full antialiased bg-[#FAFAF9] text-slate-900 font-sans">
-        {children}
+        <LanguageProvider>
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   )
