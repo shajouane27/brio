@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/Navbar'
 import LinkCodeGenerator from '@/components/dashboard/LinkCodeGenerator'
 import NiveauEditor from '@/components/NiveauEditor'
+import PaysEditor from '@/components/PaysEditor'
 import { NIVEAUX } from '@/lib/niveaux'
 
 export default async function ParametresPage() {
@@ -58,6 +59,9 @@ export default async function ParametresPage() {
 
         {/* Niveau scolaire */}
         <NiveauEditor currentNiveau={niveau ?? NIVEAUX[0]} />
+
+        {/* Pays */}
+        <PaysEditor currentPays={pays} />
 
         {/* Link code generator */}
         <LinkCodeGenerator />

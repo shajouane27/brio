@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar'
 import HistoriqueList from '@/components/dashboard/HistoriqueList'
 import ProgressionChart from '@/components/dashboard/ProgressionChart'
 import EnfantNiveauEditor from '@/components/dashboard/EnfantNiveauEditor'
+import EnfantPaysEditor from '@/components/dashboard/EnfantPaysEditor'
 
 interface Props {
   params: Promise<{ id: string }>
@@ -28,13 +29,14 @@ export default async function EnfantDashboardPage({ params }: Props) {
 
   const [{ data: parentProfile }, { data: childProfile }, { data: controles }] = await Promise.all([
     supabase.from('profiles').select('prenom, profile_type').eq('id', user.id).single(),
-    supabase.from('profiles').select('prenom, niveau').eq('id', childId).single(),
+    supabase.from('profiles').select('prenom, niveau, pays').eq('id', childId).single(),
     supabase.from('controles').select('*').eq('user_id', childId).order('created_at', { ascending: false }),
   ])
 
   const parentPrenom = parentProfile?.prenom ?? 'Parent'
   const childPrenom = childProfile?.prenom ?? 'Élève'
   const childNiveau = childProfile?.niveau
+  const childPays = (childProfile as { pays?: string } | null)?.pays ?? 'fr-FR'
 
   return (
     <div className="min-h-screen">
@@ -56,6 +58,13 @@ export default async function EnfantDashboardPage({ params }: Props) {
           childId={childId}
           childPrenom={childPrenom}
           currentNiveau={childNiveau ?? 'CP'}
+        />
+
+        {/* Pays — modifiable par le parent */}
+        <EnfantPaysEditor
+          childId={childId}
+          childPrenom={childPrenom}
+          currentPays={childPays}
         />
 
         {/* Progression */}
