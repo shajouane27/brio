@@ -50,11 +50,61 @@ function extractControleQuestions(md: string): string[] {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { type, duree, notation, coursId, harder, pays, detectedLang } = body
+    const { type, duree, notation, coursId, harder, pays: clientPays, detectedLang } = body
     let { courseText, niveau } = body
 
+    // ── Authentification + récupération du pays depuis Supabase ─────────────
+    // On utilise toujours la valeur DB (authoritative), jamais le pays envoyé
+    // par le client qui peut être périmé si l'élève vient de changer de pays.
+    let supabase: SupabaseClient | null = null
+    let userId: string | null = null
+    let profilePays: string | null = null
+    let previousQuestions: string[] = []
+
+    supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      userId = user.id
+      // Récupère le pays frais depuis le profil
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('pays')
+        .eq('id', user.id)
+        .single()
+      profilePays = profile?.pays ?? null
+    }
+
+    // Réutilisation d'un cours sauvegardé : contenu + historique des questions
+    if (coursId && userId) {
+      const { data: cours } = await supabase!
+        .from('cours').select('contenu, niveau').eq('id', coursId).single()
+      if (cours) {
+        courseText = cours.contenu
+        niveau = niveau || cours.niveau
+      }
+      const { data: qs } = await supabase!
+        .from('questions_posees')
+        .select('question')
+        .eq('cours_id', coursId).eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(80)
+      previousQuestions = (qs ?? []).map((q) => q.question as string)
+    }
+
+    // ── Résolution du pays effectif ──────────────────────────────────────────
+    // Priorité :
+    // 1. Cours détecté en portugais → pt-PT (langue du cours prime sur le profil)
+    // 2. Pays du profil Supabase (source authoritative)
+    // 3. Pays envoyé par le client (dernier recours, peut être périmé)
+    // 4. France par défaut
+    const effectivePays: string =
+      (detectedLang === 'pt' ? 'pt-PT' : null)
+      ?? profilePays
+      ?? clientPays
+      ?? 'fr-FR'
+
     // Config pays (utilisé pour formater les prompts)
-    const countryConfig = getCountryConfig(pays || (detectedLang === 'pt' ? 'pt-PT' : null))
+    const countryConfig = getCountryConfig(effectivePays)
     const langue = countryConfig.langue_generation
     const formatPeda = countryConfig.format_pedagogique.trim()
     const trad = countryConfig.tradition_litteraire
@@ -67,32 +117,6 @@ export async function POST(request: NextRequest) {
     const tradNiveau = niveauCategorie === 'primaire' ? trad.auteurs_primaire
       : niveauCategorie === 'college' ? trad.auteurs_college
       : trad.auteurs_lycee
-
-    // Réutilisation d'un cours sauvegardé : on récupère le contenu + l'historique
-    let supabase: SupabaseClient | null = null
-    let userId: string | null = null
-    let previousQuestions: string[] = []
-
-    if (coursId) {
-      supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        userId = user.id
-        const { data: cours } = await supabase
-          .from('cours').select('contenu, niveau').eq('id', coursId).single()
-        if (cours) {
-          courseText = cours.contenu
-          niveau = niveau || cours.niveau
-        }
-        const { data: qs } = await supabase
-          .from('questions_posees')
-          .select('question')
-          .eq('cours_id', coursId).eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(80)
-        previousQuestions = (qs ?? []).map((q) => q.question as string)
-      }
-    }
 
     if (!type || !courseText) {
       return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 })

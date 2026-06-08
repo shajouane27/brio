@@ -60,17 +60,25 @@ Corrige cette copie (notation ${notationLabel}) en suivant CETTE MÉTHODE pour C
 1. Détecte le type de réponse :
    - Réponse UNIQUE (QCM, vrai/faux) → corrige globalement (juste ou faux).
    - Réponse MULTIPLE (conjugaison, texte à trous, liste, "entoure") → corrige ÉLÉMENT PAR ÉLÉMENT.
-   - Réponse RÉDIGÉE (phrase, paragraphe) → évalue le SENS global.
+   - Réponse RÉDIGÉE (phrase, paragraphe) → évalue le SENS global et attribue un statut (voir règles ci-dessous).
 
 2. Pour les réponses MULTIPLES : décompose la réponse (par ligne, virgule, tiret ou numéro), corrige chaque élément (✓ ou ✗), et calcule les points PARTIELS proportionnellement.
    Exemple : 4 bons éléments sur 6 attendus = 4/6 × le barème de la question (points_obtenus peut être décimal).
 
-3. Pour CHAQUE erreur (élément faux ou réponse fausse), fournis TOUJOURS :
+3. Pour les réponses RÉDIGÉES — RÈGLE DU STATUT (champ "statut") :
+   - "correct"   : réponse complète, juste, contient les éléments clés attendus → points_obtenus = 100 % du barème
+   - "partiel"   : réponse incomplète ou partiellement juste (éléments manquants ou imprécis) → points_obtenus = 50 % du barème
+   - "incorrect" : réponse fausse ou hors sujet → points_obtenus = 0
+   - "vide"      : aucune réponse, blanc, "je ne sais pas" → points_obtenus = 0
+   NE JAMAIS valider une réponse vide ou "je ne sais pas" comme "correct" ou "partiel".
+   Pour les autres types (QCM, multiple…) : statut = "correct" si correct=true, "partiel" si points partiels > 0, "incorrect" si 0 point, "vide" si réponse manquante.
+
+4. Pour CHAQUE erreur (élément faux ou réponse fausse), fournis TOUJOURS :
    - la bonne réponse,
    - l'explication de la règle en langage adapté au niveau ${niveau ?? 'lycée'},
    - un exemple concret pour mémoriser.
 
-4. Note finale = somme de tous les points partiels. Détaille le barème question par question. Note globale en notation ${notationLabel}.
+5. Note finale = somme de tous les points partiels. Détaille le barème question par question. Note globale en notation ${notationLabel}.
 
 FORMAT DE RÉPONSE (JSON strict, sans markdown) :
 {
@@ -80,6 +88,7 @@ FORMAT DE RÉPONSE (JSON strict, sans markdown) :
     {
       "numero": "1",
       "type": "conjugaison|qcm|vrai_faux|redaction|texte_a_trous|liste|calcul|autre",
+      "statut": "correct|partiel|incorrect|vide",
       "enonce_court": "Début de la question (max 60 car.)",
       "reponse_eleve": "Réponse de l'élève (résumé si long)",
       "elements": [
@@ -98,9 +107,9 @@ FORMAT DE RÉPONSE (JSON strict, sans markdown) :
 Règles pour "elements" :
 - Réponse MULTIPLE (conjugaison, texte à trous, liste, entoure) : un objet par élément attendu, avec "attendu", "reponse" (ce qu'a écrit l'élève), "correct", "points" (partiels), et "explication" si faux.
 - Réponse UNIQUE (QCM, vrai/faux) : un seul élément.
-- Réponse RÉDIGÉE : "elements" peut être [] et tu évalues le sens global via points_obtenus + pourquoi.
-- "points_obtenus" = somme des "points" des éléments. "pourquoi" et "exemple" ne sont remplis qu'en cas d'erreur.
-Si une réponse est vide : reponse_eleve "Sans réponse", points_obtenus 0, elements [].`,
+- Réponse RÉDIGÉE : "elements" peut être [] et tu évalues via statut + points_obtenus + pourquoi.
+- "points_obtenus" = somme des "points" des éléments (ou 100/50/0 % du barème pour les rédigées). "pourquoi" et "exemple" remplis en cas d'erreur ou statut partiel.
+Si une réponse est vide : reponse_eleve "Sans réponse", statut "vide", points_obtenus 0, elements [].`,
       }],
     })
 

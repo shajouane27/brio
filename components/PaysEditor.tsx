@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { COUNTRY_OPTIONS } from '@/lib/countries'
 import CountrySelector from './CountrySelector'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 interface PaysEditorProps {
   currentPays: string
@@ -11,6 +12,7 @@ interface PaysEditorProps {
 
 export default function PaysEditor({ currentPays }: PaysEditorProps) {
   const router = useRouter()
+  const { setPays } = useLanguage()
   const [selected, setSelected] = useState(currentPays)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -30,8 +32,10 @@ export default function PaysEditor({ currentPays }: PaysEditorProps) {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
+      // Met à jour le LanguageContext immédiatement — sans attendre router.refresh()
+      setPays(selected)
       setSuccess(true)
-      // Rafraîchit la page pour appliquer la nouvelle langue d'interface
+      // Rafraîchit les Server Components (profil, Navbar) pour rester en sync avec le serveur
       router.refresh()
       setTimeout(() => setSuccess(false), 4000)
     } catch (e) {

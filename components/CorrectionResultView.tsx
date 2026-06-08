@@ -13,9 +13,13 @@ export interface CorrectionElement {
   correction?: string
 }
 
+export type QuestionStatut = 'correct' | 'partiel' | 'incorrect' | 'vide'
+
 export interface CorrectionQuestion {
   numero: string
   type?: string
+  /** Statut 4-niveaux retourné par l'API (prioritaire sur correct + points_obtenus) */
+  statut?: QuestionStatut
   enonce_court: string
   reponse_eleve: string
   points_obtenus: string | number
@@ -83,17 +87,27 @@ export default function CorrectionResultView({ result, saved }: { result: Correc
         <h3 className="text-sm font-bold text-slate-500 mb-3 px-1">Détail par question</h3>
         <div className="space-y-3">
           {result.questions.map((q, i) => {
-            const status = q.correct ? 'ok' : num(q.points_obtenus) === 0 ? 'ko' : 'partial'
-            const badge = {
-              ok: { bg: 'bg-emerald-500', icon: '✓', border: 'border-l-emerald-400' },
-              ko: { bg: 'bg-rose-500', icon: '✗', border: 'border-l-rose-400' },
-              partial: { bg: 'bg-accent-500', icon: '~', border: 'border-l-accent-400' },
-            }[status]
+            // Résout le statut : champ API en priorité, sinon dérivé des points/correct
+            const statut: QuestionStatut =
+              q.statut ??
+              (q.correct
+                ? 'correct'
+                : num(q.points_obtenus) === 0
+                  ? (q.reponse_eleve?.toLowerCase().includes('sans réponse') ? 'vide' : 'incorrect')
+                  : 'partiel')
+
+            const STATUT_STYLES: Record<QuestionStatut, { bg: string; icon: string; border: string; card: string; label: string }> = {
+              correct:   { bg: 'bg-emerald-500', icon: '✅', border: 'border-l-emerald-400', card: 'bg-emerald-50/40', label: 'Correct' },
+              partiel:   { bg: 'bg-amber-500',   icon: '🟡', border: 'border-l-amber-400',   card: 'bg-amber-50/40',   label: 'Partiel' },
+              incorrect: { bg: 'bg-rose-500',    icon: '❌', border: 'border-l-rose-400',    card: 'bg-rose-50/30',    label: 'Incorrect' },
+              vide:      { bg: 'bg-slate-400',   icon: '⬜', border: 'border-l-slate-300',   card: 'bg-slate-50',      label: 'Sans réponse' },
+            }
+            const style = STATUT_STYLES[statut]
             return (
-              <div key={i} className={`bg-white rounded-2xl border border-slate-200 border-l-4 ${badge.border} p-4 space-y-2.5 shadow-sm`}>
+              <div key={i} className={`rounded-2xl border border-slate-200 border-l-4 ${style.border} ${style.card} p-4 space-y-2.5 shadow-sm`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2.5">
-                    <span className={`shrink-0 w-6 h-6 rounded-full ${badge.bg} text-white text-xs font-bold flex items-center justify-center mt-0.5`}>{badge.icon}</span>
+                    <span className="shrink-0 text-base mt-0.5" title={style.label}>{style.icon}</span>
                     <span className="text-sm font-semibold text-slate-800">Q{q.numero}. <Markdown content={q.enonce_court} inline /></span>
                   </div>
                   <span className="text-sm font-bold shrink-0 text-slate-700 bg-slate-100 px-2 py-0.5 rounded-lg">{fmt(q.points_obtenus)}/{fmt(q.points_max)}</span>
