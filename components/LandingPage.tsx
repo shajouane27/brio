@@ -171,8 +171,7 @@ function PhoneMockup() {
 /* ─── Hero ───────────────────────────────────────────────────────────────── */
 function Hero() {
   return (
-    <section className="relative overflow-hidden pt-16 pb-24 px-4 sm:px-6"
-      style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #6366f1 40%, #3b82f6 100%)' }}>
+    <section className="relative overflow-hidden pt-16 pb-24 px-4 sm:px-6 bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-500">
 
       {/* Décoration géométrique SVG */}
       <svg className="absolute inset-0 w-full h-full opacity-10 pointer-events-none" aria-hidden>
