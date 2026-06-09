@@ -1,14 +1,22 @@
 'use client'
 
 import { useState } from 'react'
-import { NIVEAUX } from '@/lib/niveaux'
+import { getCountryConfig } from '@/lib/countries'
 
 interface NiveauEditorProps {
   currentNiveau: string
+  pays?: string
 }
 
-export default function NiveauEditor({ currentNiveau }: NiveauEditorProps) {
-  const [selected, setSelected] = useState(currentNiveau)
+export default function NiveauEditor({ currentNiveau, pays = 'fr-FR' }: NiveauEditorProps) {
+  // Niveaux disponibles selon le pays du profil
+  const niveaux = getCountryConfig(pays).niveaux
+  // Si le niveau actuel n'appartient pas à la liste du nouveau pays, on prend le premier
+  const defaultNiveau = niveaux.includes(currentNiveau as typeof niveaux[number])
+    ? currentNiveau
+    : niveaux[0]
+
+  const [selected, setSelected] = useState(defaultNiveau)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
@@ -49,7 +57,7 @@ export default function NiveauEditor({ currentNiveau }: NiveauEditorProps) {
           onChange={(e) => { setSelected(e.target.value); setSuccess(false) }}
           className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900 bg-white"
         >
-          {NIVEAUX.map((n) => (
+          {niveaux.map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}
         </select>

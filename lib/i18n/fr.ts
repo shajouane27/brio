@@ -53,6 +53,26 @@ const fr: Record<string, string> = {
   mode_dictee:        'Mode dictée',
   ecrire_sur_feuille: 'Écris ce que tu entends sur ta feuille ✏️',
 
+  // ── Page cours ───────────────────────────────────────────────────────────────
+  mes_cours_titre:    'Mes cours',
+  sous_titre_cours:   'Tes cours analysés sont sauvegardés ici — réutilise-les sans reprendre de photo.',
+
+  // ── Dashboard stats ───────────────────────────────────────────────────────────
+  controles_corriges_1:  'contrôle corrigé',
+  controles_corriges_n:  'contrôles corrigés',
+  moyenne_sur_20:         'moyenne /20',
+  pas_encore_note:        'pas encore de note',
+
+  // ── Flash backfill ───────────────────────────────────────────────────────────
+  genere_questions_flash: 'Génère tes questions flash',
+  flash_backfill_desc:    'Tu as déjà des cours analysés — crée leurs questions de révision en un clic.',
+  flash_generation_btn:   'Générer mes questions',
+  flash_en_cours:         'Génération…',
+  flash_traitement:       'Encore {n} cours à traiter…',
+  flash_termine:          'Terminé ! Tes questions sont prêtes 🎉',
+  flash_erreur:           'Une erreur est survenue. Réessaie.',
+  flash_chargement:       'Génération de tes questions… (quelques secondes)',
+
   // ── Commun ───────────────────────────────────────────────────────────────────
   retour:             '← Retour',
   terminer:           'Terminer',

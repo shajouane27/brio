@@ -2,32 +2,33 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function FlashBackfillButton() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
 
   async function run() {
     setLoading(true)
-    setStatus('Génération de tes questions… (quelques secondes)')
+    setStatus(t('flash_chargement'))
     try {
       let guard = 0
-      // Relance tant qu'il reste des cours à traiter (4 par appel)
       while (guard++ < 12) {
         const res = await fetch('/api/flash/backfill')
         if (!res.ok) throw new Error('backfill')
         const data = await res.json()
         if (data.restants > 0) {
-          setStatus(`Encore ${data.restants} cours à traiter…`)
+          setStatus(t('flash_traitement').replace('{n}', String(data.restants)))
           continue
         }
         break
       }
-      setStatus('Terminé ! Tes questions sont prêtes 🎉')
+      setStatus(t('flash_termine'))
       router.refresh()
     } catch {
-      setStatus('Une erreur est survenue. Réessaie.')
+      setStatus(t('flash_erreur'))
       setLoading(false)
     }
   }
@@ -35,10 +36,8 @@ export default function FlashBackfillButton() {
   return (
     <div className="rounded-3xl border border-dashed border-accent-200 bg-accent-50/40 p-8 text-center">
       <div className="mx-auto w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-3xl mb-3 shadow-sm">⚡</div>
-      <p className="font-bold text-slate-800">Génère tes questions flash</p>
-      <p className="text-sm text-slate-500 mt-1">
-        Tu as déjà des cours analysés — crée leurs questions de révision en un clic.
-      </p>
+      <p className="font-bold text-slate-800">{t('genere_questions_flash')}</p>
+      <p className="text-sm text-slate-500 mt-1">{t('flash_backfill_desc')}</p>
       <button
         onClick={run}
         disabled={loading}
@@ -50,10 +49,10 @@ export default function FlashBackfillButton() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            Génération…
+            {t('flash_en_cours')}
           </>
         ) : (
-          <>⚡ Générer mes questions</>
+          <>⚡ {t('flash_generation_btn')}</>
         )}
       </button>
       {status && <p className="text-xs text-slate-500 mt-3">{status}</p>}

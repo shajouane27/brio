@@ -5,7 +5,6 @@ import Navbar from '@/components/Navbar'
 import LinkCodeGenerator from '@/components/dashboard/LinkCodeGenerator'
 import NiveauEditor from '@/components/NiveauEditor'
 import PaysEditor from '@/components/PaysEditor'
-import { NIVEAUX } from '@/lib/niveaux'
 
 export default async function ParametresPage() {
   const supabase = await createClient()
@@ -58,7 +57,7 @@ export default async function ParametresPage() {
         </div>
 
         {/* Niveau scolaire */}
-        <NiveauEditor currentNiveau={niveau ?? NIVEAUX[0]} />
+        <NiveauEditor currentNiveau={niveau ?? ''} pays={pays} />
 
         {/* Pays */}
         <PaysEditor currentPays={pays} />

@@ -14,6 +14,14 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
 
+  // Pays du profil (pour générer les questions dans la bonne langue)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('pays')
+    .eq('id', user.id)
+    .single()
+  const pays: string = profile?.pays ?? 'fr-FR'
+
   // Cours de l'élève
   const { data: cours } = await supabase
     .from('cours')
@@ -32,7 +40,7 @@ export async function GET() {
   let traites = 0
   let questions = 0
   for (const c of missing.slice(0, BATCH)) {
-    const cards = await generateFlashCards(c.contenu, c.niveau ?? '')
+    const cards = await generateFlashCards(c.contenu, c.niveau ?? '', pays)
     if (cards.length) {
       await supabase.from('flash_cards').insert(
         cards.map((card) => ({

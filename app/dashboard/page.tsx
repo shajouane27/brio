@@ -166,13 +166,13 @@ export default async function DashboardPage() {
               <StatCard
                 icon="📋"
                 value={String(allControles.length)}
-                label={`contrôle${allControles.length > 1 ? 's' : ''} corrigé${allControles.length > 1 ? 's' : ''}`}
+                label={t(allControles.length > 1 ? 'controles_corriges_n' : 'controles_corriges_1', lang)}
                 tone="brand"
               />
               <StatCard
                 icon="🎯"
                 value={moyenne ? `${moyenne}` : '—'}
-                label={moyenne ? 'moyenne /20' : 'pas encore de note'}
+                label={moyenne ? t('moyenne_sur_20', lang) : t('pas_encore_note', lang)}
                 tone="accent"
               />
             </>
