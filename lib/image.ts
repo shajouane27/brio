@@ -1,4 +1,4 @@
-const MAX_DIMENSION = 800 // px — réduit pour passer sous les 4.5 Mo de limite Vercel (8 photos max)
+const MAX_DIMENSION = 1200 // px — max 1200px, qualité 75 % → ~150-300 Ko par photo
 
 // Extensions image reconnues (iPhone + Android)
 const IMAGE_EXT_RE = /\.(jpe?g|png|webp|heic|heif|gif|bmp|tiff?)$/i
@@ -62,7 +62,7 @@ export function toJpeg(file: File): Promise<File> {
             resolve(new File([blob], newName, { type: 'image/jpeg' }))
           },
           'image/jpeg',
-          0.70
+          0.75
         )
       } catch {
         URL.revokeObjectURL(url)

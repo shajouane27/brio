@@ -27,13 +27,16 @@ interface UploadClientProps {
   initialAction?: 'exercices' | 'controle'
 }
 
-// Prépare un fichier : conversion JPEG + création de la preview
+// Prépare un fichier : compression JPEG + preview + capture des tailles avant/après
 async function prepareFile(file: File): Promise<PhotoItem> {
+  const sizeOriginal = file.size
   const processedFile = await toJpeg(file)
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
     file: processedFile,
     preview: URL.createObjectURL(processedFile),
+    sizeOriginal,
+    sizeCompressed: processedFile.size,
   }
 }
 

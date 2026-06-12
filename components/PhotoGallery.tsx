@@ -22,6 +22,15 @@ export interface PhotoItem {
   id: string
   file: File
   preview: string
+  /** Taille originale du fichier en octets (avant compression) */
+  sizeOriginal?: number
+  /** Taille compressée du fichier en octets */
+  sizeCompressed?: number
+}
+
+function fmtSize(bytes: number): string {
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`
 }
 
 interface PhotoGalleryProps {
@@ -45,13 +54,16 @@ function SortablePhoto({ photo, index, onRemove, disabled }: {
     zIndex: isDragging ? 50 : undefined,
   }
 
+  const hasSize = photo.sizeOriginal !== undefined && photo.sizeCompressed !== undefined
+  const saved = hasSize ? Math.round(100 - (photo.sizeCompressed! / photo.sizeOriginal!) * 100) : 0
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       className="relative group rounded-xl overflow-hidden border-2 border-slate-200 bg-slate-100 aspect-[3/4]"
     >
-      {/* Drag handle */}
+      {/* Drag handle — couvre l'image sans couvrir les boutons */}
       <div
         {...attributes}
         {...listeners}
@@ -70,21 +82,24 @@ function SortablePhoto({ photo, index, onRemove, disabled }: {
         {index + 1}
       </div>
 
-      {/* Delete button */}
+      {/* Bouton × — toujours visible (mobile-first : pas de hover) */}
       {!disabled && (
         <button
           onClick={(e) => { e.stopPropagation(); onRemove() }}
-          className="absolute top-1.5 right-1.5 z-20 w-6 h-6 rounded-full bg-red-500 hover:bg-red-600 text-white text-xs font-bold flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-1.5 right-1.5 z-20 w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-bold flex items-center justify-center shadow-md"
           aria-label={`Supprimer la page ${index + 1}`}
         >
           ×
         </button>
       )}
 
-      {/* Drag hint on hover */}
-      {!disabled && (
-        <div className="absolute bottom-0 inset-x-0 z-20 py-1 bg-black/40 text-white text-xs text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-          ↕ Déplacer
+      {/* Taille originale → compressée */}
+      {hasSize && (
+        <div className="absolute bottom-0 inset-x-0 z-20 px-1 py-0.5 bg-black/55 pointer-events-none">
+          <p className="text-[9px] text-white text-center leading-tight font-medium">
+            {fmtSize(photo.sizeOriginal!)} → {fmtSize(photo.sizeCompressed!)}
+            {saved > 0 && <span className="text-green-300 ml-0.5">−{saved}%</span>}
+          </p>
         </div>
       )}
     </div>
