@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLanguage } from '@/contexts/LanguageContext'
 import PdfDownloadButtons from './PdfDownloadButtons'
 import CorrectionPanel from './CorrectionPanel'
 import Markdown from './Markdown'
@@ -29,6 +30,7 @@ interface ResultPanelProps {
 const GEO_MATIERES = ['Histoire-Géographie', 'Histoire', 'Géographie']
 
 export default function ResultPanel({ content, type, niveau, exercices, controleOptions, illustrations, onReset, onBack, onRegenerate }: ResultPanelProps) {
+  const { t } = useLanguage()
   const [copied, setCopied] = useState(false)
   const [showCorrection, setShowCorrection] = useState(false)
   const [showFiller, setShowFiller] = useState(false)
@@ -57,7 +59,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
       a.click()
       URL.revokeObjectURL(url)
     } catch {
-      alert('Impossible de générer le PDF. Réessaie.')
+      alert(t('erreur_pdf'))
     } finally {
       setPdfLoading(false)
     }
@@ -68,7 +70,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
   const isExercices = type === 'exercices'
   // Sépare les schémas SVG du texte (rendu à part, responsive)
   const body = isExercices ? { text: content, svgs: [] as string[] } : extractSvgs(content)
-  const title = isControle ? 'Contrôle type généré' : isFiche ? 'Fiche de révision' : 'Exercices générés'
+  const title = isControle ? t('controle_genere') : isFiche ? t('fiche_revision_titre') : t('exercices_generes')
   const headerGradient = isControle
     ? 'from-brand-600 to-brand-700'
     : isFiche
@@ -119,7 +121,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
             </span>
             <div>
               <h2 className="font-bold text-lg leading-tight">{title}</h2>
-              <p className="text-xs text-white/80 mt-0.5">Niveau {niveau}</p>
+              <p className="text-xs text-white/80 mt-0.5">{t('niveau_label')} {niveau}</p>
             </div>
           </div>
           {!isExercices && (
@@ -127,7 +129,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
               onClick={handleCopy}
               className="text-sm font-semibold px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors shrink-0"
             >
-              {copied ? '✓ Copié !' : 'Copier'}
+              {copied ? t('copie_ok') : t('copier')}
             </button>
           )}
         </div>
@@ -181,7 +183,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
           ) : (
             <span className="text-xl">🖨️</span>
           )}
-          Télécharger la fiche en PDF
+          {t('telecharger_fiche_pdf')}
         </button>
       )}
 
@@ -192,13 +194,13 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
             onClick={() => setShowFiller(true)}
             className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-2xl shadow-md shadow-brand-600/20 hover:shadow-lg hover:-translate-y-0.5 transition-all"
           >
-            <span className="text-xl">✏️</span> Remplir dans l&apos;app
+            <span className="text-xl">✏️</span> {t('remplir_app')}
           </button>
           <button
             onClick={() => setShowCorrection(true)}
             className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 text-white font-bold py-4 rounded-2xl shadow-md shadow-accent-500/25 hover:shadow-lg hover:-translate-y-0.5 transition-all"
           >
-            <span className="text-xl">📸</span> Corriger ma copie
+            <span className="text-xl">📸</span> {t('corriger_copie')}
           </button>
         </div>
       )}
@@ -209,13 +211,13 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
           onClick={onBack}
           className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-colors text-sm"
         >
-          ← Retour
+          {t('retour_btn')}
         </button>
         <button
           onClick={onReset}
           className={`flex-1 py-3 rounded-xl text-white font-semibold transition-colors text-sm ${isControle ? 'bg-brand-600 hover:bg-brand-700' : isFiche ? 'bg-sky-600 hover:bg-sky-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
         >
-          ✨ Nouveau cours
+          ✨ {t('nouveau_cours')}
         </button>
       </div>
     </div>

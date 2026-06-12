@@ -11,8 +11,9 @@ import { type Exercice } from '@/components/ExercicesPlayer'
 import { type RegenFn } from '@/components/RegenButtons'
 import { type Illustration } from '@/components/Illustrations'
 import DicteeMode from '@/components/DicteeMode'
+import { useLanguage } from '@/contexts/LanguageContext'
 
-const PRIMAIRE = ['CP', 'CE1', 'CE2', 'CM1', 'CM2']
+const PRIMAIRE = ['CP', 'CE1', 'CE2', 'CM1', 'CM2', '1º ano', '2º ano', '3º ano', '4º ano']
 
 type Step = 'upload' | 'extracting' | 'extracted' | 'generating' | 'done'
 
@@ -39,6 +40,7 @@ async function prepareFile(file: File): Promise<PhotoItem> {
 type GenType = 'exercices' | 'controle' | 'fiche'
 
 export default function UploadClient({ niveau, pays, initialCourseText, initialCoursId, initialAction }: UploadClientProps) {
+  const { t } = useLanguage()
   const [step, setStep] = useState<Step>(initialCourseText ? 'extracted' : 'upload')
   const [photos, setPhotos] = useState<PhotoItem[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -106,7 +108,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
     if (images.length > 0) {
       addFiles(images)
     } else if (all.length > 0) {
-      setError('Ce fichier n’est pas une image. Formats acceptés : JPG, PNG, WEBP, HEIC.')
+      setError(t('fichier_pas_image'))
     }
   }
 
@@ -176,7 +178,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
     } catch (e) {
       clearTimeout(timeoutId)
       if (e instanceof Error && e.name === 'AbortError') {
-        setError('La requête a pris trop de temps. Vérifie ta connexion et réessaie.')
+        setError(t('requete_trop_longue'))
       } else {
         setError(e instanceof Error ? e.message : 'Erreur inconnue')
       }
@@ -270,9 +272,9 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
 
   const STEPS = ['upload', 'extracting', 'extracted', 'generating', 'done'] as const
   const STEP_LABELS = [
-    { id: 'upload', label: 'Photos' },
-    { id: 'extracted', label: 'Contenu extrait' },
-    { id: 'done', label: 'Généré' },
+    { id: 'upload', label: t('step_photos') },
+    { id: 'extracted', label: t('step_contenu_extrait') },
+    { id: 'done', label: t('step_genere') },
   ]
   const currentIdx = STEPS.indexOf(step)
 
@@ -284,8 +286,8 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">Analyser un cours</h1>
-        <p className="text-slate-500 mt-1.5">Prends en photo toutes les pages de ton cours et laisse Brio faire le reste.</p>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">{t('page_upload_titre')}</h1>
+        <p className="text-slate-500 mt-1.5">{t('page_upload_sous_titre')}</p>
       </div>
 
       {/* Step indicator 1-2-3 */}
@@ -364,16 +366,16 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 </div>
                 <p className="font-bold text-slate-800 text-lg">
                   {isProcessing
-                    ? 'Traitement en cours…'
+                    ? t('traitement_photo')
                     : isDragActive
-                    ? 'Dépose tes photos ici !'
+                    ? t('depose_photos')
                     : photos.length === 0
-                    ? 'Choisis tes photos de cours'
-                    : 'Ajouter d\'autres pages'}
+                    ? t('choisis_photos')
+                    : t('ajouter_pages')}
                 </p>
                 {!isProcessing && (
                   <>
-                    <p className="text-sm text-slate-500 mt-1">depuis ta galerie, ou glisse-dépose ici</p>
+                    <p className="text-sm text-slate-500 mt-1">{t('depuis_galerie')}</p>
                     <p className="text-xs text-slate-400 mt-3">
                       JPG, PNG, WEBP, HEIC · Max 20 Mo ·{' '}
                       {MAX_PHOTOS - photos.length} emplacement{MAX_PHOTOS - photos.length > 1 ? 's' : ''} restant{MAX_PHOTOS - photos.length > 1 ? 's' : ''}
@@ -390,7 +392,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 className="w-full flex items-center justify-center gap-2.5 bg-accent-500 hover:bg-accent-600 text-white disabled:opacity-40 disabled:pointer-events-none rounded-2xl py-4 font-semibold shadow-sm shadow-accent-500/25 transition-all"
               >
                 <span className="text-xl">📷</span>
-                Prendre une photo maintenant
+                {t('prendre_photo_btn')}
               </button>
             </div>
           )}
@@ -401,11 +403,11 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold text-slate-700 flex items-center gap-1.5">
                   <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-brand-100 text-brand-700 text-xs">{photos.length}</span>
-                  page{photos.length > 1 ? 's' : ''} · glisse pour réordonner
+                  page{photos.length > 1 ? 's' : ''} · {t('glisse_reordonner')}
                 </p>
                 {photos.length === MAX_PHOTOS && (
                   <span className="text-xs text-accent-700 font-semibold bg-accent-50 px-2.5 py-1 rounded-full">
-                    Maximum atteint
+                    {t('maximum_atteint')}
                   </span>
                 )}
               </div>
@@ -431,17 +433,17 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
               {step === 'extracting' ? (
                 <>
                   <Spinner />
-                  Extraction en cours… ({photos.length} page{photos.length > 1 ? 's' : ''})
+                  {t('extraction_en_cours')} ({photos.length} page{photos.length > 1 ? 's' : ''})
                 </>
               ) : (
-                <>✨ Extraire le cours ({photos.length} page{photos.length > 1 ? 's' : ''})</>
+                <>✨ {t('extraire_cours')} ({photos.length} page{photos.length > 1 ? 's' : ''})</>
               )}
             </button>
           )}
 
           {step === 'extracting' && (
             <p className="text-center text-sm text-slate-500 animate-pulse">
-              Claude analyse {photos.length > 1 ? 'toutes les pages' : 'la page'} et reconstitue le cours…
+              {t('claude_analyse')}
             </p>
           )}
         </div>
@@ -454,7 +456,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-slate-900 flex items-center gap-2">
                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-100 text-brand-700">📄</span>
-                Contenu extrait
+                {t('contenu_extrait_titre')}
                 {photos.length > 0 && (
                   <span className="text-xs font-medium text-slate-400">· {photos.length} page{photos.length > 1 ? 's' : ''}</span>
                 )}
@@ -463,7 +465,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 onClick={handleReset}
                 className="text-sm font-medium text-slate-400 hover:text-brand-600 transition-colors"
               >
-                ↺ Recommencer
+                ↺ {t('recommencer')}
               </button>
             </div>
             <div className="bg-slate-50 rounded-xl p-4 max-h-64 overflow-y-auto border border-slate-100">
@@ -478,7 +480,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
           )}
 
           <div>
-            <p className="text-sm font-semibold text-slate-500 mb-3">Que veux-tu générer à partir de ce cours ?</p>
+            <p className="text-sm font-semibold text-slate-500 mb-3">{t('que_generer')}</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button
                 onClick={() => handleGenerate('exercices')}
@@ -486,12 +488,12 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-emerald-50 border-2 border-emerald-200 hover:border-emerald-400 disabled:opacity-50 text-emerald-700 font-bold py-5 rounded-2xl transition-all"
               >
                 {step === 'generating' && generationType === 'exercices' ? (
-                  <><Spinner /> Génération…</>
+                  <><Spinner /> {t('generation_label')}</>
                 ) : (
                   <>
                     <span className="text-2xl">✏️</span>
-                    <span>Générer des exercices</span>
-                    <span className="text-xs font-medium text-emerald-500">pour s&apos;entraîner</span>
+                    <span>{t('generer_exercices')}</span>
+                    <span className="text-xs font-medium text-emerald-500">{t('pour_sentrainer')}</span>
                   </>
                 )}
               </button>
@@ -502,12 +504,12 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-brand-50 border-2 border-brand-200 hover:border-brand-400 disabled:opacity-50 text-brand-700 font-bold py-5 rounded-2xl transition-all"
               >
                 {step === 'generating' && generationType === 'controle' ? (
-                  <><Spinner /> Génération…</>
+                  <><Spinner /> {t('generation_label')}</>
                 ) : (
                   <>
                     <span className="text-2xl">📋</span>
-                    <span>Générer un contrôle type</span>
-                    <span className="text-xs font-medium text-brand-400">en conditions d&apos;examen</span>
+                    <span>{t('generer_controle')}</span>
+                    <span className="text-xs font-medium text-brand-400">{t('en_conditions_examen')}</span>
                   </>
                 )}
               </button>
@@ -518,12 +520,12 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-sky-50 border-2 border-sky-200 hover:border-sky-400 disabled:opacity-50 text-sky-700 font-bold py-5 rounded-2xl transition-all"
               >
                 {step === 'generating' && generationType === 'fiche' ? (
-                  <><Spinner /> Génération…</>
+                  <><Spinner /> {t('generation_label')}</>
                 ) : (
                   <>
                     <span className="text-2xl">📋</span>
-                    <span>Générer une fiche de révision</span>
-                    <span className="text-xs font-medium text-sky-500">l&apos;essentiel en 5 min</span>
+                    <span>{t('generer_fiche')}</span>
+                    <span className="text-xs font-medium text-sky-500">{t('essentiel_5min')}</span>
                   </>
                 )}
               </button>
@@ -536,8 +538,8 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 disabled={step === 'generating'}
                 className="w-full mt-3 flex items-center justify-center gap-2.5 bg-white hover:bg-accent-50 border-2 border-accent-300 hover:border-accent-400 disabled:opacity-50 text-accent-700 font-bold py-4 rounded-2xl transition-all"
               >
-                <span className="text-xl">🎤</span> Mode dictée
-                <span className="text-xs font-medium text-accent-500">l&apos;app lit, tu écris</span>
+                <span className="text-xl">🎤</span> {t('mode_dictee')}
+                <span className="text-xs font-medium text-accent-500">{t('mode_dictee_desc')}</span>
               </button>
             )}
           </div>
