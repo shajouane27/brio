@@ -82,9 +82,11 @@ function SortablePhoto({ photo, index, onRemove, disabled }: {
         {index + 1}
       </div>
 
-      {/* Bouton × — toujours visible (mobile-first : pas de hover) */}
+      {/* Bouton × — toujours visible, onPointerDown stopPropagation empêche
+          dnd-kit de capturer le touch avant que le click atteigne le bouton */}
       {!disabled && (
         <button
+          onPointerDown={(e) => e.stopPropagation()}
           onClick={(e) => { e.stopPropagation(); onRemove() }}
           className="absolute top-1.5 right-1.5 z-20 w-7 h-7 rounded-full bg-red-500 hover:bg-red-600 active:bg-red-700 text-white text-sm font-bold flex items-center justify-center shadow-md"
           aria-label={`Supprimer la page ${index + 1}`}

@@ -8,6 +8,7 @@ import ParentDashboard from '@/components/dashboard/ParentDashboard'
 import FlashQuestions, { type FlashCard } from '@/components/FlashQuestions'
 import FlashBackfillButton from '@/components/FlashBackfillButton'
 import { t, langFromPays } from '@/lib/i18n'
+import { displayNiveau } from '@/lib/niveaux'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -142,7 +143,7 @@ export default async function DashboardPage() {
               </p>
               {niveau && (
                 <span className="inline-flex items-center gap-1.5 mt-3.5 bg-white/15 text-white text-sm font-semibold px-3 py-1 rounded-full">
-                  🎓 {niveau}
+                  🎓 {displayNiveau(niveau, pays)}
                 </span>
               )}
             </div>
