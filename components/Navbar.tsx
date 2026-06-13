@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { t, langFromPays, type TranslationKey } from '@/lib/i18n'
+import { useTranslations } from 'next-intl'
+import { langFromPays } from '@/lib/i18n'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 interface NavbarProps {
@@ -22,6 +23,7 @@ export default function Navbar({ prenom, profileType, pays }: NavbarProps) {
   const isParent = profileType === 'parent'
   const initial = (prenom?.charAt(0) ?? '?').toUpperCase()
   const lang = langFromPays(pays)
+  const tNav = useTranslations('Nav')
   const { syncPays } = useLanguage()
 
   // Synchronise le contexte de langue avec le pays du profil authentifié
@@ -60,9 +62,9 @@ export default function Navbar({ prenom, profileType, pays }: NavbarProps) {
         {/* Navigation centrale (élève uniquement) */}
         {!isParent && (
           <div className="hidden sm:flex items-center gap-1">
-            <NavLink href="/dashboard" label={t('accueil', lang)} />
-            <NavLink href="/upload" label={t('analyser_cours', lang)} />
-            <NavLink href="/cours" label={t('mes_cours', lang)} />
+            <NavLink href="/dashboard" label={tNav('accueil')} />
+            <NavLink href="/upload" label={tNav('analyser_cours')} />
+            <NavLink href="/cours" label={tNav('mes_cours')} />
           </div>
         )}
 
@@ -94,11 +96,11 @@ export default function Navbar({ prenom, profileType, pays }: NavbarProps) {
 
               {/* Liens */}
               <div className="py-1">
-                <MenuItem href="/dashboard" icon="🏠" label={t('accueil', lang)} onClick={() => setMenuOpen(false)} />
+                <MenuItem href="/dashboard" icon="🏠" label={tNav('accueil')} onClick={() => setMenuOpen(false)} />
                 {!isParent && (
                   <>
-                    <MenuItem href="/cours" icon="📚" label={t('mes_cours', lang)} onClick={() => setMenuOpen(false)} />
-                    <MenuItem href="/parametres" icon="⚙️" label={t('parametres', lang)} onClick={() => setMenuOpen(false)} />
+                    <MenuItem href="/cours" icon="📚" label={tNav('mes_cours')} onClick={() => setMenuOpen(false)} />
+                    <MenuItem href="/parametres" icon="⚙️" label={tNav('parametres')} onClick={() => setMenuOpen(false)} />
                   </>
                 )}
               </div>
@@ -110,7 +112,7 @@ export default function Navbar({ prenom, profileType, pays }: NavbarProps) {
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                 >
                   <span className="text-base">↪</span>
-                  {t('deconnexion', lang)}
+                  {tNav('deconnexion')}
                 </button>
               </div>
             </div>

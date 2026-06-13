@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import RegenButtons, { type RegenFn } from './RegenButtons'
 
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export default function ExercicesPlayer({ exercices, onRegenerate }: Props) {
+  const t = useTranslations('Exercices')
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [corrected, setCorrected] = useState(false)
 
@@ -43,7 +45,7 @@ export default function ExercicesPlayer({ exercices, onRegenerate }: Props) {
       {corrected && gradable.length > 0 && (
         <div className="rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-4 text-center shadow-sm">
           <div className="text-2xl font-extrabold">{score} / {gradable.length}</div>
-          <div className="text-xs text-white/80 mt-0.5">bonnes réponses aux questions auto-corrigées</div>
+          <div className="text-xs text-white/80 mt-0.5">{t('bonnes_reponses')}</div>
         </div>
       )}
 
@@ -95,7 +97,7 @@ export default function ExercicesPlayer({ exercices, onRegenerate }: Props) {
                   onChange={(e) => setAnswer(i, e.target.value)}
                   disabled={corrected}
                   rows={3}
-                  placeholder="Écris ta réponse ici…"
+                  {...{placeholder: t('ecrire')}}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-400 text-sm text-slate-800 disabled:bg-slate-50"
                 />
               </div>
@@ -106,7 +108,7 @@ export default function ExercicesPlayer({ exercices, onRegenerate }: Props) {
               <div className="ml-10 mt-3 space-y-2 animate-fade-in-up">
                 {isGradable && (
                   <p className={`text-sm font-semibold ${isCorrect ? 'text-emerald-600' : 'text-rose-500'}`}>
-                    {isCorrect ? '✓ Bonne réponse !' : '✗ Réponse incorrecte'}
+                    {isCorrect ? t('bonne_reponse') : t('reponse_incorrecte')}
                   </p>
                 )}
 
@@ -118,17 +120,17 @@ export default function ExercicesPlayer({ exercices, onRegenerate }: Props) {
                     </div>
                     {ex.explication && (
                       <div className="bg-brand-50 rounded-lg px-3 py-2 text-sm text-brand-800">
-                        <span className="font-semibold">Pourquoi ? </span>{ex.explication}
+                        <span className="font-semibold">{t('pourquoi')} </span>{ex.explication}
                       </div>
                     )}
                     {ex.exemple && (
                       <div className="bg-slate-50 rounded-lg px-3 py-2 text-sm text-slate-600">
-                        <span className="font-semibold">Exemple : </span>{ex.exemple}
+                        <span className="font-semibold">{t('exemple')} </span>{ex.exemple}
                       </div>
                     )}
                     {ex.astuce && (
                       <div className="bg-accent-50 rounded-lg px-3 py-2 text-sm text-accent-800">
-                        <span className="font-semibold">💡 Astuce : </span>{ex.astuce}
+                        <span className="font-semibold">{t('astuce')} </span>{ex.astuce}
                       </div>
                     )}
                   </>
@@ -144,7 +146,7 @@ export default function ExercicesPlayer({ exercices, onRegenerate }: Props) {
           onClick={() => setCorrected(true)}
           className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-2xl shadow-md shadow-brand-600/20 hover:shadow-lg hover:-translate-y-0.5 transition-all"
         >
-          ✓ Corriger mes réponses
+          {t('corriger')}
         </button>
       ) : (
         <>
@@ -152,7 +154,7 @@ export default function ExercicesPlayer({ exercices, onRegenerate }: Props) {
             onClick={reset}
             className="w-full border border-slate-200 text-slate-600 font-semibold py-3 rounded-2xl hover:bg-slate-50 transition-colors text-sm"
           >
-            ↺ Refaire les exercices
+            {t('refaire')}
           </button>
           {onRegenerate && (
             <RegenButtons

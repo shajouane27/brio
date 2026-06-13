@@ -27,6 +27,23 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Synchronise le cookie brio_lang avec le pays du profil (lu depuis les métadonnées
+  // utilisateur, sans requête DB supplémentaire). Utilisé par next-intl pour charger
+  // la bonne langue côté serveur dès le premier rendu.
+  if (user) {
+    const pays: string = user.user_metadata?.pays ?? 'fr-FR'
+    const lang = pays === 'pt-PT' ? 'pt' : 'fr'
+    const current = request.cookies.get('brio_lang')?.value
+    if (current !== lang) {
+      supabaseResponse.cookies.set('brio_lang', lang, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365, // 1 an
+        sameSite: 'lax',
+        httpOnly: false, // lisible côté client pour LanguageProvider
+      })
+    }
+  }
+
   const isAuthPage = request.nextUrl.pathname.startsWith('/auth')
   const isProtected = ['/dashboard', '/upload', '/parametres', '/exercices', '/controle', '/cours'].some(
     (p) => request.nextUrl.pathname.startsWith(p)

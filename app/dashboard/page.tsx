@@ -7,8 +7,9 @@ import ProgressionChart from '@/components/dashboard/ProgressionChart'
 import ParentDashboard from '@/components/dashboard/ParentDashboard'
 import FlashQuestions, { type FlashCard } from '@/components/FlashQuestions'
 import FlashBackfillButton from '@/components/FlashBackfillButton'
-import { t, langFromPays } from '@/lib/i18n'
+import { getTranslations } from 'next-intl/server'
 import { displayNiveau } from '@/lib/niveaux'
+import { langFromPays } from '@/lib/i18n'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -26,6 +27,8 @@ export default async function DashboardPage() {
   const niveau = profile?.niveau ?? user.user_metadata?.niveau
   const pays = profile?.pays ?? 'fr-FR'
   const lang = langFromPays(pays)
+  const t = await getTranslations('Dashboard')
+  const tNav = await getTranslations('Nav')
 
   // ── PARENT dashboard ──────────────────────────────────────────────────────
   if (profileType === 'parent') {
@@ -135,11 +138,9 @@ export default async function DashboardPage() {
           <div className="absolute right-20 bottom-0 w-32 h-32 rounded-full bg-accent-400/20 blur-2xl" />
           <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">{t('bonjour', lang)} {prenom} 👋</h1>
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">{t('bonjour')} {prenom} 👋</h1>
               <p className="text-indigo-100 mt-2.5 max-w-md text-base sm:text-lg leading-relaxed">
-                {lang === 'pt'
-                  ? 'Fotografa a tua aula e deixa o Brio gerar os teus exercícios e corrigir as tuas cópias.'
-                  : 'Prends en photo ton cours et laisse Brio générer tes exercices et corriger tes copies.'}
+                {t('sous_titre')}
               </p>
               {niveau && (
                 <span className="inline-flex items-center gap-1.5 mt-3.5 bg-white/15 text-white text-sm font-semibold px-3 py-1 rounded-full">
@@ -155,7 +156,7 @@ export default async function DashboardPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              {t('analyser_cours', lang)}
+              {t('analyser_btn')}
             </Link>
           </div>
         </section>
@@ -167,13 +168,13 @@ export default async function DashboardPage() {
               <StatCard
                 icon="📋"
                 value={String(allControles.length)}
-                label={t(allControles.length > 1 ? 'controles_corriges_n' : 'controles_corriges_1', lang)}
+                label={allControles.length > 1 ? t('controles_n') : t('controles_1')}
                 tone="brand"
               />
               <StatCard
                 icon="🎯"
                 value={moyenne ? `${moyenne}` : '—'}
-                label={moyenne ? t('moyenne_sur_20', lang) : t('pas_encore_note', lang)}
+                label={moyenne ? t('moyenne') : t('pas_de_note')}
                 tone="accent"
               />
             </>
@@ -187,11 +188,11 @@ export default async function DashboardPage() {
                 <div className="text-2xl">🚀</div>
                 <div className="mt-2">
                   <div className="flex items-center gap-1.5 font-bold text-brand-700">
-                    {t('lancer_controle', lang)}&nbsp;!
+                    {t('lancer_controle')}&nbsp;!
                     <span className="group-hover:translate-x-1 transition-transform">→</span>
                   </div>
                   <div className="text-xs font-medium text-brand-400 mt-1">
-                    {lang === 'pt' ? 'A tua primeira nota aparecerá aqui' : 'Ta première note s\'affichera ici'}
+                    {t('premiere_note')}
                   </div>
                 </div>
               </Link>
@@ -200,9 +201,9 @@ export default async function DashboardPage() {
               <div className="flex flex-col justify-between rounded-2xl border border-accent-100 bg-gradient-to-br from-accent-50 to-white p-5">
                 <div className="text-2xl">📈</div>
                 <div className="mt-2">
-                  <div className="font-bold text-accent-600">{t('ta_progression', lang)}</div>
+                  <div className="font-bold text-accent-600">{t('ta_progression')}</div>
                   <div className="text-xs font-medium text-slate-500 mt-1">
-                    {lang === 'pt' ? 'aparecerá aqui ao longo dos teus testes' : 'apparaîtra ici au fil de tes contrôles'}
+                    {t('progression_desc')}
                   </div>
                 </div>
               </div>
@@ -214,7 +215,7 @@ export default async function DashboardPage() {
         <section>
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-              <span>⚡</span> {t('questions_du_jour', lang)}
+              <span>⚡</span> {t('questions_du_jour')}
             </h2>
             {flashStreak > 0 && (
               <span className="inline-flex items-center gap-1.5 text-sm font-bold text-accent-700 bg-accent-50 border border-accent-100 px-3 py-1 rounded-full">
@@ -229,15 +230,15 @@ export default async function DashboardPage() {
           ) : (
             <div className="rounded-3xl border border-dashed border-accent-200 bg-accent-50/40 p-8 text-center">
               <div className="mx-auto w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-3xl mb-3 shadow-sm">⚡</div>
-              <p className="font-bold text-slate-800">{t('analyser_premier', lang)}</p>
+              <p className="font-bold text-slate-800">{t('analyser_premier')}</p>
               <p className="text-sm text-slate-500 mt-1">
-                {lang === 'pt' ? 'Cada aula analisada gera automaticamente perguntas de revisão.' : 'Chaque cours analysé génère automatiquement des questions de révision.'}
+                {t('flash_info')}
               </p>
               <Link
                 href="/upload"
                 className="inline-flex items-center gap-2 mt-4 bg-accent-500 hover:bg-accent-600 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
               >
-                ✨ {t('analyser_cours', lang)}
+                ✨ {t('analyser_btn')}
               </Link>
             </div>
           )}
@@ -249,7 +250,7 @@ export default async function DashboardPage() {
         {/* ── Historique ──────────────────────────────────────────────────── */}
         <section>
           <h2 className="font-bold text-slate-900 text-lg mb-3 flex items-center gap-2">
-            <span>📋</span> {t('mes_controles', lang)}
+            <span>📋</span> {t('mes_controles')}
           </h2>
           <HistoriqueList controles={allControles} />
         </section>

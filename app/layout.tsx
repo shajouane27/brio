@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import LanguageProvider from '@/components/LanguageProvider'
+import { NextIntlClientProvider } from 'next-intl'
+import { getMessages, getLocale } from 'next-intl/server'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -27,17 +29,22 @@ export const viewport: Viewport = {
   maximumScale: 1,
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const locale = await getLocale()
+  const messages = await getMessages()
+
   return (
-    <html lang="fr" className={`h-full ${inter.variable}`}>
+    <html lang={locale} className={`h-full ${inter.variable}`}>
       <body className="min-h-full antialiased bg-[#FAFAF9] text-slate-900 font-sans">
-        <LanguageProvider>
-          {children}
-        </LanguageProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   )

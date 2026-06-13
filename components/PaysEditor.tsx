@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { COUNTRY_OPTIONS } from '@/lib/countries'
 import CountrySelector from './CountrySelector'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTranslations } from 'next-intl'
 
 interface PaysEditorProps {
   currentPays: string
@@ -13,6 +14,8 @@ interface PaysEditorProps {
 export default function PaysEditor({ currentPays }: PaysEditorProps) {
   const router = useRouter()
   const { setPays } = useLanguage()
+  const t = useTranslations('Settings')
+  const tCommon = useTranslations('Common')
   const [selected, setSelected] = useState(currentPays)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -47,11 +50,11 @@ export default function PaysEditor({ currentPays }: PaysEditorProps) {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-      <h2 className="font-semibold text-slate-900">🌍 Mon pays</h2>
+      <h2 className="font-semibold text-slate-900">{t('pays_titre')}</h2>
 
       <div className="space-y-3">
         <label className="block text-sm text-slate-500">
-          Pays actuel (détermine la langue de l&apos;interface et le format des contrôles)
+          {t('pays_desc')}
         </label>
 
         <CountrySelector
@@ -63,9 +66,7 @@ export default function PaysEditor({ currentPays }: PaysEditorProps) {
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         {success && (
-          <p className="text-sm text-emerald-600 flex items-center gap-1.5">
-            <span>✓</span> Pays mis à jour — la langue de l&apos;interface a changé.
-          </p>
+          <p className="text-sm text-emerald-600 flex items-center gap-1.5">{t('pays_ok')}</p>
         )}
 
         <button
@@ -73,7 +74,7 @@ export default function PaysEditor({ currentPays }: PaysEditorProps) {
           disabled={!isDirty || saving}
           className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors"
         >
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
+          {saving ? tCommon('enregistrer') + '…' : tCommon('enregistrer')}
         </button>
       </div>
     </div>

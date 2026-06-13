@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import Navbar from '@/components/Navbar'
@@ -23,6 +24,8 @@ export default async function ParametresPage() {
   const pays = profile?.pays ?? 'fr-FR'
 
   if (profileType !== 'eleve') redirect('/dashboard')
+  const t = await getTranslations('Settings')
+  const tNav = await getTranslations('Nav')
 
   return (
     <div className="min-h-screen">
@@ -30,27 +33,27 @@ export default async function ParametresPage() {
       <main className="max-w-2xl mx-auto px-4 py-8 space-y-6">
         <div className="flex items-center gap-3">
           <Link href="/dashboard" className="text-slate-400 hover:text-slate-600 transition-colors">←</Link>
-          <h1 className="text-2xl font-bold text-slate-900">Paramètres</h1>
+          <h1 className="text-2xl font-bold text-slate-900">{t('titre')}</h1>
         </div>
 
         {/* Profile info */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-3">
-          <h2 className="font-semibold text-slate-900">Mon profil</h2>
+          <h2 className="font-semibold text-slate-900">{t('mon_profil')}</h2>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>
-              <span className="text-slate-400">Prénom</span>
+              <span className="text-slate-400">{t('prenom')}</span>
               <p className="font-medium text-slate-900 mt-0.5">{prenom}</p>
             </div>
             <div>
-              <span className="text-slate-400">Niveau</span>
+              <span className="text-slate-400">{t('niveau_label')}</span>
               <p className="font-medium text-slate-900 mt-0.5">{niveau ?? '—'}</p>
             </div>
             <div>
-              <span className="text-slate-400">Email</span>
+              <span className="text-slate-400">{t('email')}</span>
               <p className="font-medium text-slate-900 mt-0.5">{user.email}</p>
             </div>
             <div>
-              <span className="text-slate-400">Profil</span>
+              <span className="text-slate-400">{t('profil_type')}</span>
               <p className="font-medium text-slate-900 mt-0.5 capitalize">{profileType}</p>
             </div>
           </div>

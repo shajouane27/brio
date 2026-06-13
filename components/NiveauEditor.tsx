@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import { getCountryConfig } from '@/lib/countries'
 
@@ -16,6 +17,8 @@ export default function NiveauEditor({ currentNiveau, pays = 'fr-FR' }: NiveauEd
     ? currentNiveau
     : niveaux[0]
 
+  const t = useTranslations('Settings')
+  const tCommon = useTranslations('Common')
   const [selected, setSelected] = useState(defaultNiveau)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -46,11 +49,11 @@ export default function NiveauEditor({ currentNiveau, pays = 'fr-FR' }: NiveauEd
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-      <h2 className="font-semibold text-slate-900">🎓 Mon niveau scolaire</h2>
+      <h2 className="font-semibold text-slate-900">{t('niveau_titre')}</h2>
 
       <div className="space-y-3">
         <label className="block text-sm text-slate-500">
-          Niveau actuel
+          {t('niveau_actuel')}
         </label>
         <select
           value={selected}
@@ -77,7 +80,7 @@ export default function NiveauEditor({ currentNiveau, pays = 'fr-FR' }: NiveauEd
           disabled={!isDirty || saving}
           className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors"
         >
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
+          {saving ? tCommon('enregistrer') + '…' : tCommon('enregistrer')}
         </button>
       </div>
     </div>

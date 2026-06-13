@@ -12,6 +12,7 @@ import { type RegenFn } from '@/components/RegenButtons'
 import { type Illustration } from '@/components/Illustrations'
 import DicteeMode from '@/components/DicteeMode'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTranslations } from 'next-intl'
 
 const PRIMAIRE = ['CP', 'CE1', 'CE2', 'CM1', 'CM2', '1º ano', '2º ano', '3º ano', '4º ano']
 
@@ -43,7 +44,9 @@ async function prepareFile(file: File): Promise<PhotoItem> {
 type GenType = 'exercices' | 'controle' | 'fiche'
 
 export default function UploadClient({ niveau, pays, initialCourseText, initialCoursId, initialAction }: UploadClientProps) {
-  const { t } = useLanguage()
+  const t = useTranslations('Upload')
+  const tCommon = useTranslations('Common')
+  useLanguage() // conserve syncPays via Navbar — pas de t() ici
   const [step, setStep] = useState<Step>(initialCourseText ? 'extracted' : 'upload')
   const [photos, setPhotos] = useState<PhotoItem[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -111,7 +114,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
     if (images.length > 0) {
       addFiles(images)
     } else if (all.length > 0) {
-      setError(t('fichier_pas_image'))
+      setError(t('erreur_image'))
     }
   }
 
@@ -181,7 +184,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
     } catch (e) {
       clearTimeout(timeoutId)
       if (e instanceof Error && e.name === 'AbortError') {
-        setError(t('requete_trop_longue'))
+        setError(t('erreur_timeout'))
       } else {
         setError(e instanceof Error ? e.message : 'Erreur inconnue')
       }
@@ -276,7 +279,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
   const STEPS = ['upload', 'extracting', 'extracted', 'generating', 'done'] as const
   const STEP_LABELS = [
     { id: 'upload', label: t('step_photos') },
-    { id: 'extracted', label: t('step_contenu_extrait') },
+    { id: 'extracted', label: t('step_contenu') },
     { id: 'done', label: t('step_genere') },
   ]
   const currentIdx = STEPS.indexOf(step)
@@ -289,8 +292,8 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">{t('page_upload_titre')}</h1>
-        <p className="text-slate-500 mt-1.5">{t('page_upload_sous_titre')}</p>
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">{t('titre')}</h1>
+        <p className="text-slate-500 mt-1.5">{t('sous_titre')}</p>
       </div>
 
       {/* Step indicator 1-2-3 */}
@@ -369,16 +372,16 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 </div>
                 <p className="font-bold text-slate-800 text-lg">
                   {isProcessing
-                    ? t('traitement_photo')
+                    ? t('traitement')
                     : isDragActive
-                    ? t('depose_photos')
+                    ? t('depose')
                     : photos.length === 0
-                    ? t('choisis_photos')
-                    : t('ajouter_pages')}
+                    ? t('choisis')
+                    : t('ajouter')}
                 </p>
                 {!isProcessing && (
                   <>
-                    <p className="text-sm text-slate-500 mt-1">{t('depuis_galerie')}</p>
+                    <p className="text-sm text-slate-500 mt-1">{t('galerie')}</p>
                     <p className="text-xs text-slate-400 mt-3">
                       JPG, PNG, WEBP, HEIC · Max 20 Mo ·{' '}
                       {MAX_PHOTOS - photos.length} emplacement{MAX_PHOTOS - photos.length > 1 ? 's' : ''} restant{MAX_PHOTOS - photos.length > 1 ? 's' : ''}
@@ -395,7 +398,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 className="w-full flex items-center justify-center gap-2.5 bg-accent-500 hover:bg-accent-600 text-white disabled:opacity-40 disabled:pointer-events-none rounded-2xl py-4 font-semibold shadow-sm shadow-accent-500/25 transition-all"
               >
                 <span className="text-xl">📷</span>
-                {t('prendre_photo_btn')}
+                {t('photo_btn')}
               </button>
             </div>
           )}
@@ -436,10 +439,10 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
               {step === 'extracting' ? (
                 <>
                   <Spinner />
-                  {t('extraction_en_cours')} ({photos.length} page{photos.length > 1 ? 's' : ''})
+                  {t('extraction')} ({photos.length} page{photos.length > 1 ? 's' : ''})
                 </>
               ) : (
-                <>✨ {t('extraire_cours')} ({photos.length} page{photos.length > 1 ? 's' : ''})</>
+                <>✨ {t('extraire_btn')} ({photos.length} page{photos.length > 1 ? 's' : ''})</>
               )}
             </button>
           )}
@@ -459,7 +462,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-bold text-slate-900 flex items-center gap-2">
                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-100 text-brand-700">📄</span>
-                {t('contenu_extrait_titre')}
+                {t('contenu_extrait')}
                 {photos.length > 0 && (
                   <span className="text-xs font-medium text-slate-400">· {photos.length} page{photos.length > 1 ? 's' : ''}</span>
                 )}
@@ -468,7 +471,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 onClick={handleReset}
                 className="text-sm font-medium text-slate-400 hover:text-brand-600 transition-colors"
               >
-                ↺ {t('recommencer')}
+                ↺ {tCommon('recommencer')}
               </button>
             </div>
             <div className="bg-slate-50 rounded-xl p-4 max-h-64 overflow-y-auto border border-slate-100">
@@ -491,7 +494,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-emerald-50 border-2 border-emerald-200 hover:border-emerald-400 disabled:opacity-50 text-emerald-700 font-bold py-5 rounded-2xl transition-all"
               >
                 {step === 'generating' && generationType === 'exercices' ? (
-                  <><Spinner /> {t('generation_label')}</>
+                  <><Spinner /> {tCommon('generation')}</>
                 ) : (
                   <>
                     <span className="text-2xl">✏️</span>
@@ -507,7 +510,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-brand-50 border-2 border-brand-200 hover:border-brand-400 disabled:opacity-50 text-brand-700 font-bold py-5 rounded-2xl transition-all"
               >
                 {step === 'generating' && generationType === 'controle' ? (
-                  <><Spinner /> {t('generation_label')}</>
+                  <><Spinner /> {tCommon('generation')}</>
                 ) : (
                   <>
                     <span className="text-2xl">📋</span>
@@ -523,7 +526,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 className="flex flex-col items-center justify-center gap-1 bg-white hover:bg-sky-50 border-2 border-sky-200 hover:border-sky-400 disabled:opacity-50 text-sky-700 font-bold py-5 rounded-2xl transition-all"
               >
                 {step === 'generating' && generationType === 'fiche' ? (
-                  <><Spinner /> {t('generation_label')}</>
+                  <><Spinner /> {tCommon('generation')}</>
                 ) : (
                   <>
                     <span className="text-2xl">📋</span>

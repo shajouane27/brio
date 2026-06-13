@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTranslations } from 'next-intl'
 import PdfDownloadButtons from './PdfDownloadButtons'
 import CorrectionPanel from './CorrectionPanel'
 import Markdown from './Markdown'
@@ -30,7 +31,8 @@ interface ResultPanelProps {
 const GEO_MATIERES = ['Histoire-Géographie', 'Histoire', 'Géographie']
 
 export default function ResultPanel({ content, type, niveau, exercices, controleOptions, illustrations, onReset, onBack, onRegenerate }: ResultPanelProps) {
-  const { t } = useLanguage()
+  useLanguage()
+  const t = useTranslations('Result')
   const [copied, setCopied] = useState(false)
   const [showCorrection, setShowCorrection] = useState(false)
   const [showFiller, setShowFiller] = useState(false)
@@ -70,7 +72,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
   const isExercices = type === 'exercices'
   // Sépare les schémas SVG du texte (rendu à part, responsive)
   const body = isExercices ? { text: content, svgs: [] as string[] } : extractSvgs(content)
-  const title = isControle ? t('controle_genere') : isFiche ? t('fiche_revision_titre') : t('exercices_generes')
+  const title = isControle ? t('controle_genere') : isFiche ? t('fiche_revision') : t('exercices_generes')
   const headerGradient = isControle
     ? 'from-brand-600 to-brand-700'
     : isFiche
@@ -121,7 +123,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
             </span>
             <div>
               <h2 className="font-bold text-lg leading-tight">{title}</h2>
-              <p className="text-xs text-white/80 mt-0.5">{t('niveau_label')} {niveau}</p>
+              <p className="text-xs text-white/80 mt-0.5">{t('niveau', { defaultValue: 'Niveau' })} {niveau}</p>
             </div>
           </div>
           {!isExercices && (
@@ -183,7 +185,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
           ) : (
             <span className="text-xl">🖨️</span>
           )}
-          {t('telecharger_fiche_pdf')}
+          {t('telecharger_pdf')}
         </button>
       )}
 
@@ -211,7 +213,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
           onClick={onBack}
           className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-colors text-sm"
         >
-          {t('retour_btn')}
+          {t('retour')}
         </button>
         <button
           onClick={onReset}

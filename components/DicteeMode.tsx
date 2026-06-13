@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState, useRef, useEffect } from 'react'
@@ -46,6 +47,8 @@ function Spinner() {
 }
 
 export default function DicteeMode({ courseText, niveau, onClose }: Props) {
+  const t = useTranslations('Dictee')
+  const tCommon = useTranslations('Common')
   const [phase, setPhase] = useState<'loading' | 'reading' | 'photo' | 'correcting' | 'done'>('loading')
   const [dictee, setDictee] = useState('')
   const [error, setError] = useState('')
@@ -82,10 +85,10 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
           sentencesRef.current = toSentences(d.text)
           setPhase('reading')
         } else {
-          setError(d.error || 'Génération impossible')
+          setError(d.error || t('impossible'))
         }
       })
-      .catch(() => { if (!cancelled) setError('Erreur de génération de la dictée') })
+      .catch(() => { if (!cancelled) setError(t('erreur_gen')) })
     return () => { cancelled = true; getSynth()?.cancel() }
   }, [courseText, niveau])
 
@@ -140,7 +143,7 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
 
   // Photo
   async function addFile(f: File) {
-    if (!isImageFile(f)) { setError('Choisis une image (photo de ta feuille).'); return }
+    if (!isImageFile(f)) { setError(t('erreur_image')); return }
     setError('')
     const jpeg = await toJpeg(f)
     setFile(jpeg)
@@ -167,7 +170,7 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
       setResult(data.correction)
       setPhase('done')
     } catch {
-      setError('La correction a échoué. Réessaie.')
+      setError(t('echec'))
       setPhase('photo')
     }
   }
@@ -180,7 +183,7 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
       <button onClick={() => { getSynth()?.cancel(); clearGap(); onClose() }} className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors text-lg shrink-0">←</button>
       <h2 className="font-bold text-slate-900 flex items-center gap-2">
         <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-accent-100 text-accent-700">🎤</span>
-        Mode dictée
+        {t('titre')}
       </h2>
     </div>
   )
@@ -190,7 +193,7 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
       <div className="mt-6 space-y-5">
         {Header}
         <div className="text-center py-10 text-slate-500">
-          <Spinner /> <span className="ml-2">Préparation de ta dictée…</span>
+          <Spinner /> <span className="ml-2">{t('preparation')}</span>
         </div>
         {error && <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl">{error}</div>}
       </div>
@@ -206,34 +209,34 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
 
         <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm text-center">
           <div className="text-5xl mb-3">{readState === 'playing' ? '🔊' : '🎧'}</div>
-          <p className="text-xl font-bold text-slate-800">Écris ce que tu entends sur ta feuille ✏️</p>
-          <p className="text-sm text-slate-400 mt-1">Phrase {Math.min(idx + 1, total)} / {total}</p>
+          <p className="text-xl font-bold text-slate-800">{t('ecrire')}</p>
+          <p className="text-sm text-slate-400 mt-1">{t('phrase', { current: Math.min(idx + 1, total), total })}</p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 mt-6">
             {readState === 'idle' && (
-              <BigBtn onClick={() => speak(0)} tone="accent">▶ Commencer la dictée</BigBtn>
+              <BigBtn onClick={() => speak(0)} tone="accent">{t('commencer')}</BigBtn>
             )}
             {readState === 'playing' && (
-              <BigBtn onClick={pause} tone="slate">⏸ Pause</BigBtn>
+              <BigBtn onClick={pause} tone="slate">{t('pause')}</BigBtn>
             )}
             {readState === 'paused' && (
-              <BigBtn onClick={resume} tone="accent">▶ Reprendre</BigBtn>
+              <BigBtn onClick={resume} tone="accent">{t('reprendre')}</BigBtn>
             )}
             {(readState === 'playing' || readState === 'paused') && (
               <>
-                <BigBtn onClick={repeat} tone="ghost">🔁 Répéter la phrase</BigBtn>
-                <BigBtn onClick={next} tone="ghost">⏭ Phrase suivante</BigBtn>
+                <BigBtn onClick={repeat} tone="ghost">{t('repeter')}</BigBtn>
+                <BigBtn onClick={next} tone="ghost">{t('suivante')}</BigBtn>
               </>
             )}
           </div>
 
           {readState === 'finished' && (
-            <p className="text-emerald-600 font-semibold mt-4">Dictée terminée ! 🎉</p>
+            <p className="text-emerald-600 font-semibold mt-4">{t('terminee')}</p>
           )}
         </div>
 
         <button onClick={goPhoto} className="w-full flex items-center justify-center gap-2 bg-brand-600 hover:bg-brand-700 text-white font-bold py-4 rounded-2xl shadow-md transition-colors">
-          📸 Photographier ma dictée
+          {t('photographier')}
         </button>
       </div>
     )
@@ -257,7 +260,7 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
           ) : (
             <div className="py-4">
               <div className="text-4xl mb-2">📄</div>
-              <p className="font-bold text-slate-800 text-lg">Choisis la photo de ta dictée</p>
+              <p className="font-bold text-slate-800 text-lg">{t('choisir_photo')}</p>
             </div>
           )}
         </div>
@@ -270,7 +273,7 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
 
         {preview && (
           <button onClick={correct} disabled={phase === 'correcting'} className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-50 text-white font-bold py-4 rounded-2xl shadow-md transition-colors">
-            {phase === 'correcting' ? <><Spinner /> Correction en cours…</> : '✓ Corriger ma dictée'}
+            {phase === 'correcting' ? <><Spinner /> {t('correction_loading')}</> : t('corriger_btn')}
           </button>
         )}
       </div>
@@ -292,7 +295,7 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
 
         {/* Texte corrigé mot par mot */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
-          <h3 className="font-bold text-slate-900 mb-3">Ta dictée corrigée</h3>
+          <h3 className="font-bold text-slate-900 mb-3">{t('dictee_corrigee')}</h3>
           <p className="leading-loose text-lg">
             {result.mots.map((m, i) => (
               m.correct ? (
@@ -310,7 +313,7 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
         {/* Règles des fautes */}
         {fautes.length > 0 && (
           <div className="space-y-2">
-            <h3 className="font-bold text-slate-900">Pour progresser</h3>
+            <h3 className="font-bold text-slate-900">{t('pour_progresser')}</h3>
             {fautes.map((m, i) => (
               <div key={i} className="bg-rose-50 border border-rose-100 rounded-xl px-4 py-3 text-sm">
                 <span className="text-rose-500 line-through">{m.mot}</span>
@@ -322,7 +325,7 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
           </div>
         )}
 
-        <button onClick={onClose} className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition-colors text-sm">Terminer</button>
+        <button onClick={onClose} className="w-full py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition-colors text-sm">{tCommon('terminer')}</button>
       </div>
     )
   }

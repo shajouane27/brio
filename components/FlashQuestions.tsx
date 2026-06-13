@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTranslations } from 'next-intl'
 
 /** Traduit les options Vrai/Faux stockées en FR pour les profils PT.
  *  Les nouvelles cartes PT ont déjà Verdadeiro/Falso, mais les anciennes
@@ -50,7 +51,8 @@ function playSuccess() {
 }
 
 export default function FlashQuestions({ cards, initialStreak }: Props) {
-  const { t, pays } = useLanguage()
+  const { pays } = useLanguage()
+  const t = useTranslations('Flash')
   const [index, setIndex] = useState(0)
   const [selected, setSelected] = useState<string | null>(null)
   const [score, setScore] = useState(0)
@@ -94,28 +96,20 @@ export default function FlashQuestions({ cards, initialStreak }: Props) {
 
   // ── Écran de fin ───────────────────────────────────────────────────────────
   if (finished) {
-    const isPt = pays === 'pt-PT'
     const encouragement =
-      score === total
-        ? (isPt ? 'Perfeito, sem erros! 🎉' : 'Parfait, sans-faute ! 🎉')
-        : score >= Math.ceil(total * 0.6)
-        ? (isPt ? 'Muito bem, continua assim!' : 'Bien joué, continue comme ça !')
-        : (isPt ? 'Continua, estás a progredir a cada sessão!' : 'Continue, tu progresses à chaque session !')
-    const streakLabel = isPt
-      ? `🔥 ${streak} dia${streak > 1 ? 's' : ''} seguidos`
-      : `🔥 ${streak} jour${streak > 1 ? 's' : ''} d'affilée`
-    const reviensDemain = isPt
-      ? 'Volta amanhã para novas perguntas e manter a tua série!'
-      : 'Reviens demain pour de nouvelles questions et garder ta série !'
+      score === total ? t('parfait')
+      : score >= Math.ceil(total * 0.6) ? t('bien_joue')
+      : t('continue')
+    const streakKey = streak > 1 ? 'streak_plural' : 'streak'
     return (
       <div className="rounded-3xl border border-slate-200 bg-white p-7 text-center shadow-sm animate-fade-in-up">
         <div className="text-4xl mb-2">🏁</div>
         <div className="text-3xl font-extrabold text-slate-900">{score} / {total}</div>
         <p className="text-slate-500 mt-1">{encouragement}</p>
         <div className="mt-4 inline-flex items-center gap-2 bg-accent-50 text-accent-700 font-bold px-4 py-2 rounded-full">
-          {streakLabel}
+          {t(streakKey, { count: streak })}
         </div>
-        <p className="text-xs text-slate-400 mt-4">{reviensDemain}</p>
+        <p className="text-xs text-slate-400 mt-4">{t('reviens')}</p>
       </div>
     )
   }
@@ -135,12 +129,12 @@ export default function FlashQuestions({ cards, initialStreak }: Props) {
 
       <div className="flex items-center justify-between mb-3">
         <span className="text-xs font-semibold text-slate-400">
-          {pays === 'pt-PT' ? 'Pergunta' : 'Question'} {index + 1} / {total}
+          {t('question', { index: index + 1, total })}
         </span>
         <span className="text-xs font-semibold text-accent-600 bg-accent-50 px-2 py-0.5 rounded-full">
           {card.type === 'vraifaux'
-            ? (pays === 'pt-PT' ? 'Verdadeiro / Falso' : 'Vrai / Faux')
-            : (pays === 'pt-PT' ? 'Escolha múltipla' : 'QCM')}
+            ? (t('vrai_faux'))
+            : (t('qcm'))}
         </span>
       </div>
 
@@ -177,11 +171,11 @@ export default function FlashQuestions({ cards, initialStreak }: Props) {
         <div className="mt-5 animate-fade-in-up">
           {selected === card.reponse ? (
             <p className="text-sm font-semibold text-emerald-600 mb-3">
-              ✓ {pays === 'pt-PT' ? 'Resposta correta!' : 'Bonne réponse !'}
+              ✓ {t('bonne_reponse').replace('✓ ', '')}
             </p>
           ) : (
             <p className="text-sm font-semibold text-rose-500 mb-3">
-              {pays === 'pt-PT' ? 'A resposta correta era:' : 'La bonne réponse était :'}{' '}
+              {t('mauvaise_reponse')}{' '}
               <span className="text-slate-800">{localizeOption(card.reponse, pays)}</span>
             </p>
           )}
@@ -190,8 +184,8 @@ export default function FlashQuestions({ cards, initialStreak }: Props) {
             className="w-full bg-accent-500 hover:bg-accent-600 text-white font-bold py-3.5 rounded-2xl shadow-sm transition-colors"
           >
             {index < total - 1
-              ? t('question_suivante') + ' →'
-              : (pays === 'pt-PT' ? 'Ver a minha pontuação' : 'Voir mon score')}
+              ? t('suivante')
+              : (t('voir_score'))}
           </button>
         </div>
       )}

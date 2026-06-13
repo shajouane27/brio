@@ -3,16 +3,18 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTranslations } from 'next-intl'
 
 export default function FlashBackfillButton() {
   const router = useRouter()
-  const { t } = useLanguage()
+  const t = useTranslations('Flash')
+  useLanguage() // conserve pays
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState('')
 
   async function run() {
     setLoading(true)
-    setStatus(t('flash_chargement'))
+    setStatus(t('chargement'))
     try {
       let guard = 0
       while (guard++ < 12) {
@@ -20,15 +22,15 @@ export default function FlashBackfillButton() {
         if (!res.ok) throw new Error('backfill')
         const data = await res.json()
         if (data.restants > 0) {
-          setStatus(t('flash_traitement').replace('{n}', String(data.restants)))
+          setStatus(t('traitement', { n: data.restants }))
           continue
         }
         break
       }
-      setStatus(t('flash_termine'))
+      setStatus(t('termine'))
       router.refresh()
     } catch {
-      setStatus(t('flash_erreur'))
+      setStatus(t('erreur'))
       setLoading(false)
     }
   }
@@ -36,8 +38,8 @@ export default function FlashBackfillButton() {
   return (
     <div className="rounded-3xl border border-dashed border-accent-200 bg-accent-50/40 p-8 text-center">
       <div className="mx-auto w-16 h-16 rounded-2xl bg-white flex items-center justify-center text-3xl mb-3 shadow-sm">⚡</div>
-      <p className="font-bold text-slate-800">{t('genere_questions_flash')}</p>
-      <p className="text-sm text-slate-500 mt-1">{t('flash_backfill_desc')}</p>
+      <p className="font-bold text-slate-800">{t('genere_titre')}</p>
+      <p className="text-sm text-slate-500 mt-1">{t('genere_desc')}</p>
       <button
         onClick={run}
         disabled={loading}
@@ -49,10 +51,10 @@ export default function FlashBackfillButton() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
-            {t('flash_en_cours')}
+            {t('en_cours')}
           </>
         ) : (
-          <>⚡ {t('flash_generation_btn')}</>
+          <>⚡ {t('genere_btn')}</>
         )}
       </button>
       {status && <p className="text-xs text-slate-500 mt-3">{status}</p>}

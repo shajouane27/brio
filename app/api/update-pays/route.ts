@@ -50,5 +50,11 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Erreur lors de la mise à jour' }, { status: 500 })
   }
 
+  // Sync aussi les métadonnées utilisateur pour que le middleware puisse lire
+  // le pays sans requête DB et mettre à jour le cookie brio_lang immédiatement.
+  if (targetId === user.id) {
+    await supabase.auth.updateUser({ data: { pays } })
+  }
+
   return NextResponse.json({ ok: true, pays })
 }

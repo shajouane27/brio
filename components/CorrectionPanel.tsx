@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useState, useRef } from 'react'
 import { toJpeg, isImageFile } from '@/lib/image'
 import Markdown from './Markdown'
@@ -42,6 +43,8 @@ interface CorrectionPanelProps {
 }
 
 export default function CorrectionPanel({ controleContent, notation, niveau, duree, onClose, onSaved, onRegenerate }: CorrectionPanelProps) {
+  const t = useTranslations('Correction')
+  const tCommon = useTranslations('Common')
   const [preview, setPreview] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [correcting, setCorrecting] = useState(false)
@@ -63,7 +66,7 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
       setFile(jpeg)
       setPreview(URL.createObjectURL(jpeg))
     } catch {
-      setError('Erreur lors du traitement de la photo.')
+      setError(t('erreur_traitement'))
     } finally {
       setProcessing(false)
     }
@@ -74,7 +77,7 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
     if (isImageFile(f)) {
       addFile(f)
     } else {
-      setError('Ce fichier n’est pas une image. Formats acceptés : JPG, PNG, WEBP, HEIC.')
+      setError(t('erreur_image'))
     }
   }
 
@@ -156,9 +159,9 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
         <div>
           <h2 className="font-bold text-slate-900 flex items-center gap-2">
             <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-accent-100 text-accent-700">📸</span>
-            Corriger ma copie
+            {t('titre')}
           </h2>
-          <p className="text-sm text-slate-500 mt-0.5">Prends en photo ta copie — Claude la corrige automatiquement.</p>
+          <p className="text-sm text-slate-500 mt-0.5">{t('sous_titre')}</p>
         </div>
       </div>
 
@@ -201,13 +204,13 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={preview} alt="Aperçu copie" className="w-full object-contain max-h-60" />
                 </div>
-                <p className="text-sm text-brand-600 font-semibold">Clique pour changer la photo</p>
+                <p className="text-sm text-brand-600 font-semibold">{t('changer_photo')}</p>
               </div>
             ) : (
               <div className="space-y-2 py-2">
                 <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-3xl mb-1">📄</div>
                 <p className="font-bold text-slate-800 text-lg">
-                  {isDragActive ? 'Dépose ici !' : 'Choisis la photo de ta copie'}
+                  {isDragActive ? 'Dépose ici !' : t('choisir_photo')}
                 </p>
                 <p className="text-sm text-slate-400">JPG, PNG, WEBP, HEIC · Max 20 Mo</p>
               </div>
@@ -222,7 +225,7 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
             className="w-full flex items-center justify-center gap-2.5 bg-accent-50 hover:bg-accent-100 border border-accent-200 text-accent-700 disabled:opacity-40 rounded-2xl py-4 font-semibold transition-all"
           >
             <span className="text-xl">📷</span>
-            Prendre une photo
+            {t('prendre_photo')}
           </button>
 
           {error && (
@@ -236,16 +239,16 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
               className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-accent-500 to-accent-600 hover:from-accent-600 hover:to-accent-700 disabled:opacity-50 text-white font-bold py-4 rounded-2xl shadow-md shadow-accent-500/25 hover:shadow-lg hover:-translate-y-0.5 disabled:translate-y-0 transition-all text-base"
             >
               {correcting ? (
-                <><Spinner /> Correction en cours…</>
+                <><Spinner /> {t('correction_loading')}</>
               ) : (
-                <>✨ Corriger ma copie</>
+                <>{t('corriger_btn')}</>
               )}
             </button>
           )}
 
           {correcting && (
             <p className="text-center text-sm text-slate-500 animate-pulse">
-              Claude analyse ta copie… cela peut prendre 15–30 secondes.
+              {t('analyse')}
             </p>
           )}
         </div>
@@ -279,9 +282,9 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
             </div>
           </div>
 
-          {/* Détail par question */}
+          {/* {t('detail')} */}
           <div>
-            <h3 className="text-sm font-bold text-slate-500 mb-3 px-1">Détail par question</h3>
+            <h3 className="text-sm font-bold text-slate-500 mb-3 px-1">{t('detail')}</h3>
             <div className="space-y-3">
               {result.questions.map((q, i) => {
                 // Résout le statut : champ API en priorité, sinon dérivé des points/correct
@@ -367,13 +370,13 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
               onClick={() => { setResult(null); setPreview(null); setFile(null) }}
               className="flex-1 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-colors text-sm"
             >
-              📸 Autre copie
+              {t('autre_copie')}
             </button>
             <button
               onClick={onClose}
               className="flex-1 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold transition-colors text-sm"
             >
-              Retour au contrôle
+              {t('retour_controle')}
             </button>
           </div>
 
