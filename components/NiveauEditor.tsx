@@ -19,6 +19,7 @@ export default function NiveauEditor({ currentNiveau, pays = 'fr-FR' }: NiveauEd
 
   const t = useTranslations('Settings')
   const tCommon = useTranslations('Common')
+  const tErrors = useTranslations('Errors')
   const [selected, setSelected] = useState(defaultNiveau)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -37,11 +38,18 @@ export default function NiveauEditor({ currentNiveau, pays = 'fr-FR' }: NiveauEd
         body: JSON.stringify({ niveau: selected }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
+      if (!res.ok) {
+        // Traduit les codes d'erreur connus
+        const msg = data.error as string | undefined
+        throw new Error(
+          msg === 'Niveau invalide' ? tErrors('invalid_level') :
+          msg ? msg : tErrors('update_failed')
+        )
+      }
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      setError(e instanceof Error ? e.message : tErrors('unknown'))
     } finally {
       setSaving(false)
     }

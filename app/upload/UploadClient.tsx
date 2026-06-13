@@ -46,7 +46,20 @@ type GenType = 'exercices' | 'controle' | 'fiche'
 export default function UploadClient({ niveau, pays, initialCourseText, initialCoursId, initialAction }: UploadClientProps) {
   const t = useTranslations('Upload')
   const tCommon = useTranslations('Common')
-  useLanguage() // conserve syncPays via Navbar — pas de t() ici
+  const tErrors = useTranslations('Errors')
+  useLanguage() // conserve syncPays via Navbar
+
+  /** Traduit une erreur JS/réseau en message lisible dans la langue de l'élève */
+  function translateError(e: unknown): string {
+    if (!(e instanceof Error)) return tErrors('unknown')
+    const msg = e.message.toLowerCase()
+    // Erreurs réseau navigateur
+    if (msg.includes('load failed') || msg.includes('failed to fetch') || msg.includes('networkerror')) {
+      return tErrors('load_failed')
+    }
+    // Passthrough pour les messages d'erreur de l'API (déjà traduits côté serveur ou acceptables)
+    return e.message || tErrors('unknown')
+  }
   const [step, setStep] = useState<Step>(initialCourseText ? 'extracted' : 'upload')
   const [photos, setPhotos] = useState<PhotoItem[]>([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -101,7 +114,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
         return [...prev, ...newItems.slice(0, remaining)]
       })
     } catch {
-      setError('Erreur lors du traitement de la photo.')
+      setError(tErrors('photo_processing'))
     } finally {
       setIsProcessing(false)
     }
@@ -140,7 +153,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
     setError('')
     setExtractProgress(null)
 
-    const BATCH_SIZE = 3
+    const BATCH_SIZE = 2
     const total = photos.length
 
     // Découpe les photos en batches de 3 maximum
@@ -170,9 +183,9 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
 
         const raw = await res.text()
         let data: { text?: string; error?: string; detectedLang?: string }
-        try { data = JSON.parse(raw) } catch { throw new Error(`Réponse serveur invalide (${res.status})`) }
+        try { data = JSON.parse(raw) } catch { throw new Error(tErrors('server_timeout', { status: res.status })) }
 
-        if (!res.ok) throw new Error(data.error || `Erreur serveur (${res.status})`)
+        if (!res.ok) throw new Error(data.error || tErrors('server_error', { status: res.status }))
         return { text: data.text ?? '', detectedLang: data.detectedLang ?? null }
       } catch (e) {
         clearTimeout(tid)
@@ -232,7 +245,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
       if (e instanceof Error && e.name === 'AbortError') {
         setError(t('erreur_timeout'))
       } else {
-        setError(e instanceof Error ? e.message : 'Erreur inconnue')
+        setError(translateError(e))
       }
       setStep('upload')
     }
@@ -280,7 +293,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
         }).catch(() => { /* silencieux */ })
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      setError(translateError(e))
       setStep('extracted')
     }
   }

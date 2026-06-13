@@ -8,14 +8,32 @@ const FR_COUNTRY_CODES = new Set([
   'TD','GN','RW','BJ','TG','CF','CD','CG','GA','GQ','DJ','KM','MR',
 ])
 
+// Pays ISO → langue Brio (utilisé pour request.geo.country sur Vercel)
+const COUNTRY_TO_LANG: Record<string, 'fr' | 'pt'> = {
+  PT: 'pt',
+  // Pays francophones
+  FR: 'fr', BE: 'fr', CH: 'fr', LU: 'fr', MC: 'fr',
+  MA: 'fr', DZ: 'fr', TN: 'fr', SN: 'fr', CI: 'fr', CM: 'fr', MG: 'fr',
+  ML: 'fr', BF: 'fr', NE: 'fr', TD: 'fr', GN: 'fr', RW: 'fr', BJ: 'fr',
+  TG: 'fr', CF: 'fr', CD: 'fr', CG: 'fr', GA: 'fr', DJ: 'fr', MR: 'fr',
+}
+
 /**
- * Dérive la langue depuis le header Accept-Language.
- * Exemples : "pt-PT,pt;q=0.9,fr;q=0.8" → "pt"
- *            "fr-FR,fr;q=0.9"            → "fr"
- *            "en-US,en;q=0.9"            → "fr" (défaut)
+ * Détecte la langue pour un utilisateur non connecté.
+ * Priorité :
+ * 1. request.geo.country  (Vercel Edge — gratuit, instantané, aucune API externe)
+ * 2. Accept-Language header (fallback pour dev local et autres hébergeurs)
+ * 3. 'fr' par défaut
  */
-function detectLangFromHeader(acceptLang: string): 'fr' | 'pt' {
-  // Parse toutes les entrées (tag;q=weight) triées par préférence décroissante
+function detectLangFromGeoOrHeader(request: NextRequest): 'fr' | 'pt' {
+  // 1. Géo Vercel (disponible uniquement sur Vercel Edge Runtime)
+  const geoCountry = (request as NextRequest & { geo?: { country?: string } }).geo?.country?.toUpperCase()
+  if (geoCountry && COUNTRY_TO_LANG[geoCountry]) {
+    return COUNTRY_TO_LANG[geoCountry]
+  }
+
+  // 2. Accept-Language header
+  const acceptLang = request.headers.get('accept-language') ?? ''
   const entries = acceptLang
     .split(',')
     .map((e) => {
@@ -28,7 +46,8 @@ function detectLangFromHeader(acceptLang: string): 'fr' | 'pt' {
     if (tag.startsWith('pt')) return 'pt'
     if (tag.startsWith('fr')) return 'fr'
   }
-  return 'fr' // défaut
+
+  return 'fr'
 }
 
 export async function updateSession(request: NextRequest) {
@@ -68,9 +87,10 @@ export async function updateSession(request: NextRequest) {
       supabaseResponse.cookies.set('brio_lang', lang, LANG_COOKIE)
     }
   } else if (!request.cookies.get('brio_lang')) {
-    // ── Utilisateur non connecté sans cookie : détecte depuis Accept-Language
-    // (immédiat, zéro latence — la détection IP reste côté client via detectCountry())
-    const lang = detectLangFromHeader(request.headers.get('accept-language') ?? '')
+    // ── Utilisateur non connecté sans cookie : détecte la langue
+    // Priorité 1 : request.geo (Vercel Edge — instantané, sans API externe)
+    // Priorité 2 : Accept-Language header (fallback local/dev)
+    const lang = detectLangFromGeoOrHeader(request)
     supabaseResponse.cookies.set('brio_lang', lang, LANG_COOKIE)
   }
 

@@ -1,7 +1,11 @@
 import { type NextRequest } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
-export async function proxy(request: NextRequest) {
+/**
+ * Middleware Next.js — doit s'appeler `middleware` (pas `proxy`).
+ * Gère : auth Supabase + détection langue (request.geo sur Vercel, Accept-Language en fallback).
+ */
+export async function middleware(request: NextRequest) {
   return await updateSession(request)
 }
 

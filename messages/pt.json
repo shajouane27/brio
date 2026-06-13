@@ -233,6 +233,15 @@
     "pays_desc": "País atual (determina o idioma da interface e o formato dos testes)",
     "pays_ok": "✓ País atualizado — o idioma da interface foi alterado."
   },
+  "Errors": {
+    "server_timeout": "Resposta do servidor inválida ({status}) — o servidor demorou demasiado tempo a responder.",
+    "server_error": "Erro do servidor ({status})",
+    "load_failed": "Erro de ligação. Verifica a tua ligação à internet e tenta novamente.",
+    "invalid_level": "Nível escolar inválido",
+    "update_failed": "Erro ao atualizar",
+    "unknown": "Ocorreu um erro. Tenta novamente.",
+    "photo_processing": "Erro ao tratar a fotografia."
+  },
   "Cours": {
     "titre": "As minhas aulas",
     "sous_titre": "As tuas aulas analisadas ficam guardadas aqui — reutiliza-as sem voltar a tirar fotografias.",

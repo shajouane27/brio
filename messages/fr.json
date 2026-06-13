@@ -233,6 +233,15 @@
     "pays_desc": "Pays actuel (détermine la langue de l'interface et le format des contrôles)",
     "pays_ok": "✓ Pays mis à jour — la langue de l'interface a changé."
   },
+  "Errors": {
+    "server_timeout": "Réponse serveur invalide ({status}) — le serveur a mis trop de temps à répondre.",
+    "server_error": "Erreur serveur ({status})",
+    "load_failed": "Erreur de connexion. Vérifie ta connexion internet et réessaie.",
+    "invalid_level": "Niveau scolaire invalide",
+    "update_failed": "Erreur lors de la mise à jour",
+    "unknown": "Une erreur est survenue. Réessaie.",
+    "photo_processing": "Erreur lors du traitement de la photo."
+  },
   "Cours": {
     "titre": "Mes cours",
     "sous_titre": "Tes cours analysés sont sauvegardés ici — réutilise-les sans reprendre de photo.",
