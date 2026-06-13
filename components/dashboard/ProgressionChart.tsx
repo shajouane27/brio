@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, ReferenceLine,
@@ -26,29 +27,26 @@ function formatDateShort(iso: string): string {
 }
 
 export default function ProgressionChart({ controles }: ProgressionChartProps) {
+  const t = useTranslations('Dashboard')
+
   if (controles.length < 2) {
     return (
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h3 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
           <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-100 text-brand-700">📈</span>
-          Progression
+          {t('progression')}
         </h3>
         <div className="flex flex-col items-center justify-center py-6 text-center">
           <div className="text-3xl mb-2 opacity-60">📊</div>
           <p className="text-sm text-slate-400 max-w-xs">
-            {controles.length === 0
-              ? 'Aucun résultat pour l\'instant. Corrige ta première copie pour suivre ta progression !'
-              : 'Il te faut au moins 2 contrôles corrigés pour voir ta courbe de progression.'}
+            {controles.length === 0 ? t('no_results') : t('need_more')}
           </p>
         </div>
       </div>
     )
   }
 
-  // Group by matière and build timeline points
   const matieres = [...new Set(controles.map((c) => c.matiere))]
-
-  // Build unified date series (all unique dates sorted)
   const allDates = [...new Set(controles.map((c) => c.created_at))].sort()
 
   const chartData = allDates.map((date) => {
@@ -60,7 +58,6 @@ export default function ProgressionChart({ controles }: ProgressionChartProps) {
     return point
   })
 
-  // Compute averages per matière
   const moyennes = matieres.map((m) => {
     const notes = controles.filter((c) => c.matiere === m).map((c) => c.note_sur_20)
     const avg = notes.reduce((a, b) => a + b, 0) / notes.length
@@ -75,7 +72,7 @@ export default function ProgressionChart({ controles }: ProgressionChartProps) {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <h3 className="font-bold text-slate-900 flex items-center gap-2">
           <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-brand-100 text-brand-700">📈</span>
-          Progression par matière
+          {t('progression_par_matiere')}
         </h3>
         <div className="flex flex-wrap gap-2">
           {enDifficulte.map((m) => (
@@ -101,8 +98,8 @@ export default function ProgressionChart({ controles }: ProgressionChartProps) {
             formatter={(value, name) => [`${value}/20`, name as string]}
           />
           <Legend wrapperStyle={{ fontSize: 12 }} />
-          <ReferenceLine y={10} stroke="#fca5a5" strokeDasharray="4 4" label={{ value: 'Seuil 10', position: 'right', fontSize: 10, fill: '#ef4444' }} />
-
+          <ReferenceLine y={10} stroke="#fca5a5" strokeDasharray="4 4"
+            label={{ value: t('seuil'), position: 'right', fontSize: 10, fill: '#ef4444' }} />
           {matieres.map((m, i) => (
             <Line
               key={m}

@@ -66,7 +66,14 @@
     "streak_plural": "🔥 {count} dias seguidos",
     "parent_desc": "Espaço parental — acompanhe a progressão dos seus filhos",
     "analyser_btn": "Analisar uma aula",
-    "flash_analyser_btn": "✨ Analisar uma aula"
+    "flash_analyser_btn": "✨ Analisar uma aula",
+    "progression": "Progressão",
+    "progression_par_matiere": "Progressão por matéria",
+    "no_results": "Ainda não há resultados. Corrige a tua primeira cópia para acompanhar a tua progressão!",
+    "need_more": "Precisas de pelo menos 2 testes corrigidos para ver a tua curva de progressão.",
+    "no_controles": "Ainda não há testes corrigidos. Analisa uma aula e corrige a tua cópia!",
+    "no_controles_readonly": "Ainda não há testes corrigidos.",
+    "seuil": "Limite 10"
   },
   "Upload": {
     "titre": "Analisar uma aula",

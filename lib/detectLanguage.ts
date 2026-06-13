@@ -24,8 +24,17 @@ const TZ_TO_PAYS: Record<string, string> = {
 }
 
 // Mapping code pays ISO 3166-1 α-2 → pays Brio
+// France + pays francophones d'Afrique et d'Europe
 const CC_TO_PAYS: Record<string, string> = {
+  // Français
   FR: 'fr-FR', BE: 'fr-FR', CH: 'fr-FR', LU: 'fr-FR', MC: 'fr-FR',
+  // Afrique francophone
+  MA: 'fr-FR', DZ: 'fr-FR', TN: 'fr-FR', SN: 'fr-FR', CI: 'fr-FR',
+  CM: 'fr-FR', MG: 'fr-FR', ML: 'fr-FR', BF: 'fr-FR', NE: 'fr-FR',
+  TD: 'fr-FR', GN: 'fr-FR', RW: 'fr-FR', BJ: 'fr-FR', TG: 'fr-FR',
+  CF: 'fr-FR', CD: 'fr-FR', CG: 'fr-FR', GA: 'fr-FR', GQ: 'fr-FR',
+  DJ: 'fr-FR', KM: 'fr-FR', MR: 'fr-FR',
+  // Portugais
   PT: 'pt-PT',
 }
 

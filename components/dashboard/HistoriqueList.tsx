@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import CorrectionDetailModal from './CorrectionDetailModal'
 
 interface Controle {
@@ -45,6 +46,7 @@ function formatDate(iso: string): string {
 }
 
 export default function HistoriqueList({ controles, readOnly }: HistoriqueListProps) {
+  const t = useTranslations('Dashboard')
   const [selected, setSelected] = useState<Controle | null>(null)
 
   if (!controles.length) {
@@ -52,7 +54,7 @@ export default function HistoriqueList({ controles, readOnly }: HistoriqueListPr
       <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
         <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-3xl mb-3">📋</div>
         <p className="text-slate-500 text-sm max-w-xs mx-auto">
-          {readOnly ? "Aucun contrôle corrigé pour l'instant." : "Aucun contrôle corrigé pour l'instant. Analyse un cours et corrige ta copie !"}
+          {readOnly ? t('no_controles_readonly') : t('no_controles')}
         </p>
       </div>
     )

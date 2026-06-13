@@ -66,7 +66,14 @@
     "streak_plural": "🔥 {count} jours d'affilée",
     "parent_desc": "Espace parent — suivez la progression de vos enfants",
     "analyser_btn": "Analyser un cours",
-    "flash_analyser_btn": "✨ Analyser un cours"
+    "flash_analyser_btn": "✨ Analyser un cours",
+    "progression": "Progression",
+    "progression_par_matiere": "Progression par matière",
+    "no_results": "Aucun résultat pour l'instant. Corrige ta première copie pour suivre ta progression !",
+    "need_more": "Il te faut au moins 2 contrôles corrigés pour voir ta courbe de progression.",
+    "no_controles": "Aucun contrôle corrigé pour l'instant. Analyse un cours et corrige ta copie !",
+    "no_controles_readonly": "Aucun contrôle corrigé pour l'instant.",
+    "seuil": "Seuil 10"
   },
   "Upload": {
     "titre": "Analyser un cours",
