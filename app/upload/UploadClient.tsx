@@ -64,6 +64,8 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
   const [detectedLang, setDetectedLang] = useState<string | null>(null)
   const [showDictee, setShowDictee] = useState(false)
   const [error, setError] = useState('')
+  // Progression du batching : { current: page en cours, total: nb total de pages }
+  const [extractProgress, setExtractProgress] = useState<{ current: number; total: number; merging?: boolean } | null>(null)
   const isPrimaire = PRIMAIRE.some((n) => niveau.includes(n))
 
   // Récupère des illustrations Wikimedia + la matière (arrière-plan, non bloquant)
@@ -136,53 +138,97 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
     if (!photos.length) return
     setStep('extracting')
     setError('')
+    setExtractProgress(null)
 
-    const formData = new FormData()
-    for (const p of photos) {
-      formData.append('images', p.file)
+    const BATCH_SIZE = 3
+    const total = photos.length
+
+    // Découpe les photos en batches de 3 maximum
+    const batches: PhotoItem[][] = []
+    for (let i = 0; i < total; i += BATCH_SIZE) {
+      batches.push(photos.slice(i, i + BATCH_SIZE))
     }
 
-    // Timeout de 2 min pour éviter le loading infini sur mobile (Bug 2)
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 120_000)
+    const partialTexts: string[] = []
+    let detectedLangResult: string | null = null
+    let pagesDone = 0
 
-    try {
-      const res = await fetch('/api/extract', {
-        method: 'POST',
-        body: formData,
-        signal: controller.signal,
-      })
-      clearTimeout(timeoutId)
-
-      // Lecture robuste : certaines erreurs renvoient du HTML, pas du JSON
-      const raw = await res.text()
-      let data: { text?: string; error?: string; detectedLang?: string }
-      try {
-        data = JSON.parse(raw)
-      } catch {
-        throw new Error(`Réponse serveur invalide (${res.status})`)
+    /** Envoie un batch à l'API et retourne { text, detectedLang } */
+    async function extractBatch(batch: PhotoItem[]): Promise<{ text: string; detectedLang: string | null }> {
+      const formData = new FormData()
+      for (const p of batch) {
+        formData.append('images', p.file)
       }
 
-      if (!res.ok) throw new Error(data.error || `Erreur serveur (${res.status})`)
-      setCourseText(data.text ?? '')
-      const lang = data.detectedLang ?? null
-      if (lang) setDetectedLang(lang)
+      // 55 s par batch (sous la limite Vercel de 60 s)
+      const controller = new AbortController()
+      const tid = setTimeout(() => controller.abort(), 55_000)
+
+      try {
+        const res = await fetch('/api/extract', { method: 'POST', body: formData, signal: controller.signal })
+        clearTimeout(tid)
+
+        const raw = await res.text()
+        let data: { text?: string; error?: string; detectedLang?: string }
+        try { data = JSON.parse(raw) } catch { throw new Error(`Réponse serveur invalide (${res.status})`) }
+
+        if (!res.ok) throw new Error(data.error || `Erreur serveur (${res.status})`)
+        return { text: data.text ?? '', detectedLang: data.detectedLang ?? null }
+      } catch (e) {
+        clearTimeout(tid)
+        throw e
+      }
+    }
+
+    try {
+      for (let b = 0; b < batches.length; b++) {
+        const batch = batches[b]
+
+        // Affiche la première page du batch en cours
+        setExtractProgress({ current: pagesDone + 1, total })
+
+        const { text, detectedLang: lang } = await extractBatch(batch)
+
+        if (text) partialTexts.push(text)
+        if (!detectedLangResult && lang) detectedLangResult = lang
+
+        pagesDone += batch.length
+        setExtractProgress({ current: pagesDone, total })
+      }
+
+      // Fusionner les extractions partielles si plusieurs batches
+      let fullText: string
+      if (partialTexts.length <= 1) {
+        fullText = partialTexts[0] ?? ''
+      } else {
+        // Signal visuel de fusion (instantané côté client)
+        setExtractProgress({ current: total, total, merging: true })
+        // Concaténation simple — Claude recevra un cours cohérent car les batches
+        // sont dans l'ordre et la génération d'exercices tolère des jonctions de page
+        fullText = partialTexts.join('\n\n')
+        // Courte pause pour que l'utilisateur voie l'état "Fusion…"
+        await new Promise((r) => setTimeout(r, 400))
+      }
+
+      setExtractProgress(null)
+      setCourseText(fullText)
+      if (detectedLangResult) setDetectedLang(detectedLangResult)
       setStep('extracted')
-      if (data.text) fetchIllustrations(data.text, lang)
+      if (fullText) fetchIllustrations(fullText, detectedLangResult)
 
       // Sauvegarde automatique du cours dans la bibliothèque (en arrière-plan)
-      if (data.text) {
+      if (fullText) {
         fetch('/api/save-cours', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contenu: data.text, niveau }),
+          body: JSON.stringify({ contenu: fullText, niveau }),
         })
           .then((r) => (r.ok ? r.json() : null))
           .then((saved) => { if (saved?.id) coursIdRef.current = saved.id })
           .catch(() => { /* silencieux : ne bloque pas l'élève */ })
       }
     } catch (e) {
-      clearTimeout(timeoutId)
+      setExtractProgress(null)
       if (e instanceof Error && e.name === 'AbortError') {
         setError(t('erreur_timeout'))
       } else {
@@ -439,7 +485,11 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
               {step === 'extracting' ? (
                 <>
                   <Spinner />
-                  {t('extraction')} ({photos.length} page{photos.length > 1 ? 's' : ''})
+                  {extractProgress
+                    ? (extractProgress.merging
+                      ? t('fusion')
+                      : t('analyse_page', { current: extractProgress.current, total: extractProgress.total }))
+                    : t('extraction')}
                 </>
               ) : (
                 <>✨ {t('extraire_btn')} ({photos.length} page{photos.length > 1 ? 's' : ''})</>
@@ -448,9 +498,21 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
           )}
 
           {step === 'extracting' && (
-            <p className="text-center text-sm text-slate-500 animate-pulse">
-              {t('claude_analyse')}
-            </p>
+            <div className="space-y-2">
+              {extractProgress && (
+                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="h-full bg-brand-500 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.round((extractProgress.current / extractProgress.total) * 100)}%` }}
+                  />
+                </div>
+              )}
+              <p className="text-center text-sm text-slate-500 animate-pulse">
+                {extractProgress?.merging
+                  ? t('fusion')
+                  : t('claude_analyse')}
+              </p>
+            </div>
           )}
         </div>
       )}

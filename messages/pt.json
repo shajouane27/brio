@@ -91,6 +91,8 @@
     "formats_plural": "JPG, PNG, WEBP, HEIC · Máx 20 MB · {count} lugares disponíveis",
     "extraction": "Extração em curso…",
     "claude_analyse": "O Claude está a analisar as tuas páginas e a reconstituir a aula…",
+    "analyse_page": "A analisar a página {current} de {total}…",
+    "fusion": "A fundir as extrações…",
     "contenu_extrait": "Conteúdo extraído",
     "que_generer": "O que queres gerar a partir desta aula?",
     "pour_sentrainer": "para treinar",

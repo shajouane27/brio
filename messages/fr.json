@@ -91,6 +91,8 @@
     "formats_plural": "JPG, PNG, WEBP, HEIC · Max 20 Mo · {count} emplacements restants",
     "extraction": "Extraction en cours…",
     "claude_analyse": "Claude analyse tes pages et reconstitue le cours…",
+    "analyse_page": "Analyse de la page {current} sur {total}…",
+    "fusion": "Fusion des extractions…",
     "contenu_extrait": "Contenu extrait",
     "que_generer": "Que veux-tu générer à partir de ce cours ?",
     "pour_sentrainer": "pour s'entraîner",
