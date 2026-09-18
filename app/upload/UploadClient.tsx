@@ -18,7 +18,7 @@ const PRIMAIRE = ['CP', 'CE1', 'CE2', 'CM1', 'CM2', '1º ano', '2º ano', '3º a
 
 type Step = 'upload' | 'extracting' | 'extracted' | 'generating' | 'done'
 
-const MAX_PHOTOS = 10
+const MAX_PHOTOS = 3
 
 interface UploadClientProps {
   niveau: string

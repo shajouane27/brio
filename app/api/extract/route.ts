@@ -74,9 +74,11 @@ Instructions :
 Réponds avec le contenu extrait, puis la ligne LANG:XX.`,
     })
 
+    // 2000 tokens largement suffisants pour 1-2 pages de cours (~1200 tokens en moyenne).
+    // 8192 poussait la fonction à 50-60s → 504 Vercel. Réduit à 2000 → ~10-15s.
     const message = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      max_tokens: 8192,
+      max_tokens: 2000,
       messages: [{ role: 'user', content: contentBlocks }],
     })
 
