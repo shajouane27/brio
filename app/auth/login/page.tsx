@@ -23,7 +23,13 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError('Email ou mot de passe incorrect.')
+      if (error.message.toLowerCase().includes('confirm')) {
+        setError('Confirme d\'abord ton email — vérifie ta boite mail et clique sur le lien.')
+      } else if (error.message.toLowerCase().includes('invalid')) {
+        setError('Email ou mot de passe incorrect.')
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
     } else {
       router.push('/dashboard')

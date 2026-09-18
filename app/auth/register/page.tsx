@@ -23,6 +23,7 @@ export default function RegisterPage() {
   const [niveau, setNiveau] = useState(getCountryConfig('fr-FR').niveaux[0])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [emailSent, setEmailSent] = useState(false)
   const router = useRouter()
 
   // Pré-sélection depuis la détection automatique
@@ -76,16 +77,23 @@ export default function RegisterPage() {
     }
 
     if (data.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        prenom,
-        profile_type: profileType,
-        niveau: profileType === 'eleve' ? niveau : null,
-        email,
-        pays,
-      })
-      router.push('/dashboard')
-      router.refresh()
+      // Si session présente → confirmation email désactivée, on connecte directement
+      if (data.session) {
+        await supabase.from('profiles').upsert({
+          id: data.user.id,
+          prenom,
+          profile_type: profileType,
+          niveau: profileType === 'eleve' ? niveau : null,
+          email,
+          pays,
+        })
+        router.push('/dashboard')
+        router.refresh()
+      } else {
+        // Confirmation email requise → on affiche un écran d'attente
+        setEmailSent(true)
+        setLoading(false)
+      }
     }
   }
 
@@ -101,7 +109,22 @@ export default function RegisterPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-          {step === 1 ? (
+          {emailSent ? (
+            <div className="text-center space-y-4 py-4">
+              <div className="text-5xl">✉️</div>
+              <h2 className="text-xl font-semibold text-slate-900">Vérifie ta boite mail !</h2>
+              <p className="text-slate-500 text-sm">
+                On t&apos;a envoyé un lien de confirmation à <strong>{email}</strong>.
+                Clique dessus pour activer ton compte, puis connecte-toi.
+              </p>
+              <Link
+                href="/auth/login"
+                className="inline-block mt-2 text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+              >
+                → Aller à la connexion
+              </Link>
+            </div>
+          ) : step === 1 ? (
             <>
               <h2 className="text-xl font-semibold text-slate-900 mb-2">Créer un compte</h2>
               <p className="text-slate-500 text-sm mb-6">Tu es…</p>
@@ -241,3 +264,4 @@ export default function RegisterPage() {
     </div>
   )
 }
+
