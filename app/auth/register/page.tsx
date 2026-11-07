@@ -10,10 +10,34 @@ import { createClient } from '@/lib/supabase/client'
 import { COUNTRY_OPTIONS, getCountryConfig } from '@/lib/countries'
 import CountrySelector from '@/components/CountrySelector'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useTranslations } from 'next-intl'
 
 type ProfileType = 'eleve' | 'parent'
 
+/** Traduit les erreurs brutes Supabase / réseau en message lisible */
+function translateSupabaseError(msg: string, tErrors: ReturnType<typeof useTranslations>): string {
+  const m = msg.toLowerCase()
+  if (
+    m.includes('load failed') ||
+    m.includes('failed to fetch') ||
+    m.includes('network') ||
+    m.includes('fetch')
+  ) {
+    return tErrors('load_failed')
+  }
+  if (m.includes('user already registered') || m.includes('email already')) {
+    return tErrors('unknown') // on ne veut pas confirmer qu'un email existe
+  }
+  if (m.includes('timeout') || m.includes('too long')) {
+    return tErrors('server_timeout', { status: '' }).replace(' ()', '')
+  }
+  return msg || tErrors('unknown')
+}
+
 export default function RegisterPage() {
+  const t = useTranslations('Auth')
+  const tErrors = useTranslations('Errors')
+
   const [step, setStep] = useState<1 | 2>(1)
   const [profileType, setProfileType] = useState<ProfileType | null>(null)
   const [email, setEmail] = useState('')
@@ -56,44 +80,50 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
 
-    const supabase = createClient()
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          prenom,
-          profile_type: profileType,
-          niveau: profileType === 'eleve' ? niveau : null,
-          pays,
+    try {
+      const supabase = createClient()
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            prenom,
+            profile_type: profileType,
+            niveau: profileType === 'eleve' ? niveau : null,
+            pays,
+          },
         },
-      },
-    })
+      })
 
-    if (signUpError) {
-      setError(signUpError.message)
-      setLoading(false)
-      return
-    }
-
-    if (data.user) {
-      // Si session présente → confirmation email désactivée, on connecte directement
-      if (data.session) {
-        await supabase.from('profiles').upsert({
-          id: data.user.id,
-          prenom,
-          profile_type: profileType,
-          niveau: profileType === 'eleve' ? niveau : null,
-          email,
-          pays,
-        })
-        router.push('/dashboard')
-        router.refresh()
-      } else {
-        // Confirmation email requise → on affiche un écran d'attente
-        setEmailSent(true)
+      if (signUpError) {
+        setError(translateSupabaseError(signUpError.message, tErrors))
         setLoading(false)
+        return
       }
+
+      if (data.user) {
+        // Si session présente → confirmation email désactivée, on connecte directement
+        if (data.session) {
+          await supabase.from('profiles').upsert({
+            id: data.user.id,
+            prenom,
+            profile_type: profileType,
+            niveau: profileType === 'eleve' ? niveau : null,
+            email,
+            pays,
+          })
+          router.push('/dashboard')
+          router.refresh()
+        } else {
+          // Confirmation email requise → on affiche un écran d'attente
+          setEmailSent(true)
+          setLoading(false)
+        }
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : ''
+      setError(translateSupabaseError(msg, tErrors))
+      setLoading(false)
     }
   }
 
@@ -105,29 +135,33 @@ export default function RegisterPage() {
             <span className="text-white text-2xl font-bold">B</span>
           </div>
           <h1 className="text-3xl font-bold text-slate-900">Brio</h1>
-          <p className="text-slate-500 mt-1">Prépare tes examens avec l&apos;IA</p>
+          <p className="text-slate-500 mt-1">{t('sous_titre')}</p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
           {emailSent ? (
             <div className="text-center space-y-4 py-4">
               <div className="text-5xl">✉️</div>
-              <h2 className="text-xl font-semibold text-slate-900">Vérifie ta boite mail !</h2>
+              <h2 className="text-xl font-semibold text-slate-900">
+                {pays === 'pt-PT' ? 'Verifica o teu email!' : 'Vérifie ta boite mail !'}
+              </h2>
               <p className="text-slate-500 text-sm">
-                On t&apos;a envoyé un lien de confirmation à <strong>{email}</strong>.
-                Clique dessus pour activer ton compte, puis connecte-toi.
+                {pays === 'pt-PT'
+                  ? <>Enviámos um link de confirmação para <strong>{email}</strong>. Clica nele para ativar a tua conta.</>
+                  : <>On t&apos;a envoyé un lien de confirmation à <strong>{email}</strong>. Clique dessus pour activer ton compte.</>
+                }
               </p>
               <Link
                 href="/auth/login"
                 className="inline-block mt-2 text-indigo-600 hover:text-indigo-700 font-medium text-sm"
               >
-                → Aller à la connexion
+                {pays === 'pt-PT' ? '→ Ir para a ligação' : '→ Aller à la connexion'}
               </Link>
             </div>
           ) : step === 1 ? (
             <>
-              <h2 className="text-xl font-semibold text-slate-900 mb-2">Créer un compte</h2>
-              <p className="text-slate-500 text-sm mb-6">Tu es…</p>
+              <h2 className="text-xl font-semibold text-slate-900 mb-2">{t('creer_compte')}</h2>
+              <p className="text-slate-500 text-sm mb-6">{t('tu_es')}</p>
 
               <div className="grid grid-cols-2 gap-4">
                 <button
@@ -136,8 +170,8 @@ export default function RegisterPage() {
                 >
                   <span className="text-4xl">🎒</span>
                   <div className="text-center">
-                    <div className="font-semibold text-slate-900 group-hover:text-indigo-700">Élève</div>
-                    <div className="text-xs text-slate-500 mt-0.5">CP → Terminale</div>
+                    <div className="font-semibold text-slate-900 group-hover:text-indigo-700">{t('eleve')}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{t('eleve_desc')}</div>
                   </div>
                 </button>
 
@@ -147,16 +181,16 @@ export default function RegisterPage() {
                 >
                   <span className="text-4xl">👨‍👩‍👧</span>
                   <div className="text-center">
-                    <div className="font-semibold text-slate-900 group-hover:text-indigo-700">Parent</div>
-                    <div className="text-xs text-slate-500 mt-0.5">Suivre mon enfant</div>
+                    <div className="font-semibold text-slate-900 group-hover:text-indigo-700">{t('parent')}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{t('parent_desc')}</div>
                   </div>
                 </button>
               </div>
 
               <p className="text-center text-sm text-slate-500 mt-6">
-                Déjà un compte ?{' '}
+                {t('deja_compte')}{' '}
                 <Link href="/auth/login" className="text-indigo-600 hover:text-indigo-700 font-medium">
-                  Se connecter
+                  {t('se_connecter')}
                 </Link>
               </p>
             </>
@@ -170,14 +204,14 @@ export default function RegisterPage() {
                   ←
                 </button>
                 <h2 className="text-xl font-semibold text-slate-900">
-                  {profileType === 'eleve' ? '🎒 Compte élève' : '👨‍👩‍👧 Compte parent'}
+                  {profileType === 'eleve' ? t('compte_eleve_titre') : t('compte_parent_titre')}
                 </h2>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Pays */}
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Pays</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('pays_label')}</label>
                   <CountrySelector
                     countries={[...COUNTRY_OPTIONS]}
                     value={pays}
@@ -186,26 +220,26 @@ export default function RegisterPage() {
                   {isAutoDetected && detectedCountry && (
                     <p className="mt-2 text-xs text-slate-500 flex items-center gap-1.5">
                       <span>{detectedCountry.flag}</span>
-                      Nous avons détecté que vous êtes au {detectedCountry.nom} — vous pouvez modifier ce choix.
+                      {t('detection_pays', { pays: detectedCountry.nom })}
                     </p>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Prénom</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('prenom_label')}</label>
                   <input
                     type="text"
                     required
                     value={prenom}
                     onChange={(e) => setPrenom(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900"
-                    placeholder="Ton prénom"
+                    placeholder={t('prenom_placeholder')}
                   />
                 </div>
 
                 {profileType === 'eleve' && (
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Niveau scolaire</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('niveau_label')}</label>
                     <select
                       value={niveau}
                       onChange={(e) => setNiveau(e.target.value)}
@@ -219,19 +253,19 @@ export default function RegisterPage() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('email')}</label>
                   <input
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900"
-                    placeholder="ton@email.fr"
+                    placeholder={t('email_placeholder')}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1.5">Mot de passe</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('mot_de_passe')}</label>
                   <input
                     type="password"
                     required
@@ -239,7 +273,7 @@ export default function RegisterPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900"
-                    placeholder="6 caractères minimum"
+                    placeholder={t('mdp_placeholder')}
                   />
                 </div>
 
@@ -254,7 +288,7 @@ export default function RegisterPage() {
                   disabled={loading}
                   className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-xl transition-colors"
                 >
-                  {loading ? 'Création…' : 'Créer mon compte'}
+                  {loading ? t('creation_loading') : t('creer_btn')}
                 </button>
               </form>
             </>
@@ -264,4 +298,3 @@ export default function RegisterPage() {
     </div>
   )
 }
-
