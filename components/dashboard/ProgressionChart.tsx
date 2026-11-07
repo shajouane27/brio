@@ -1,6 +1,6 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, ReferenceLine,
@@ -22,12 +22,14 @@ const COLORS = [
   '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16',
 ]
 
-function formatDateShort(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
-}
-
 export default function ProgressionChart({ controles }: ProgressionChartProps) {
   const t = useTranslations('Dashboard')
+  const locale = useLocale()
+  function formatDateShort(iso: string): string {
+    return new Date(iso).toLocaleDateString(locale === 'pt' ? 'pt-PT' : 'fr-FR', {
+      day: 'numeric', month: 'short',
+    })
+  }
 
   if (controles.length < 2) {
     return (

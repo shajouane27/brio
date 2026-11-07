@@ -1,6 +1,6 @@
 'use client'
 
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useState, useRef, useEffect } from 'react'
@@ -49,6 +49,9 @@ function Spinner() {
 export default function DicteeMode({ courseText, niveau, onClose }: Props) {
   const t = useTranslations('Dictee')
   const tCommon = useTranslations('Common')
+  const locale = useLocale()
+  // BCP-47 complet pour la synthèse vocale du navigateur
+  const speechLang = locale === 'pt' ? 'pt-PT' : 'fr-FR'
   const [phase, setPhase] = useState<'loading' | 'reading' | 'photo' | 'correcting' | 'done'>('loading')
   const [dictee, setDictee] = useState('')
   const [error, setError] = useState('')
@@ -92,17 +95,21 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
     return () => { cancelled = true; getSynth()?.cancel() }
   }, [courseText, niveau])
 
-  // Voix française
+  // Voix dans la bonne langue
   useEffect(() => {
     const synth = getSynth()
     if (!synth) return
     const pick = () => {
       const vs = synth.getVoices()
-      voiceRef.current = vs.find((v) => v.lang === 'fr-FR') || vs.find((v) => v.lang.startsWith('fr')) || null
+      const langPrefix = locale === 'pt' ? 'pt' : 'fr'
+      voiceRef.current =
+        vs.find((v) => v.lang === speechLang) ||
+        vs.find((v) => v.lang.startsWith(langPrefix)) ||
+        null
     }
     pick()
     synth.onvoiceschanged = pick
-  }, [])
+  }, [locale, speechLang])
 
   function clearGap() { if (gapRef.current) { clearTimeout(gapRef.current); gapRef.current = undefined } }
 
@@ -118,7 +125,7 @@ export default function DicteeMode({ courseText, niveau, onClose }: Props) {
     pausedRef.current = false
     setReadState('playing')
     const u = new SpeechSynthesisUtterance(sentences[i])
-    u.lang = 'fr-FR'
+    u.lang = speechLang
     u.rate = 0.8
     u.pitch = 1.1
     if (voiceRef.current) u.voice = voiceRef.current

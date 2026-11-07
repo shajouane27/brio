@@ -1,5 +1,6 @@
 'use client'
 
+import { useLocale } from 'next-intl'
 import CorrectionResultView, { type CorrectionResult } from '../CorrectionResultView'
 
 interface Controle {
@@ -15,11 +16,13 @@ interface Props {
   onClose: () => void
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
-}
-
 export default function CorrectionDetailModal({ controle, onClose }: Props) {
+  const locale = useLocale()
+  function formatDate(iso: string): string {
+    return new Date(iso).toLocaleDateString(locale === 'pt' ? 'pt-PT' : 'fr-FR', {
+      day: 'numeric', month: 'long', year: 'numeric',
+    })
+  }
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
