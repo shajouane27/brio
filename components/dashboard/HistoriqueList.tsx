@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import CorrectionDetailModal from './CorrectionDetailModal'
 
 interface Controle {
@@ -41,13 +41,16 @@ function noteColor(note: number): string {
   return 'text-rose-700 bg-rose-100'
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
-}
-
 export default function HistoriqueList({ controles, readOnly }: HistoriqueListProps) {
   const t = useTranslations('Dashboard')
+  const locale = useLocale()
   const [selected, setSelected] = useState<Controle | null>(null)
+
+  function formatDate(iso: string): string {
+    return new Date(iso).toLocaleDateString(locale === 'pt' ? 'pt-PT' : 'fr-FR', {
+      day: 'numeric', month: 'short', year: 'numeric',
+    })
+  }
 
   if (!controles.length) {
     return (

@@ -135,7 +135,7 @@ function PhoneMockup() {
               <Camera size={12} className="text-indigo-600" />
             </div>
             <p className="text-indigo-600 text-[9px] font-semibold">Photographier mon cours</p>
-            <p className="text-slate-400 text-[8px]">jusqu&apos;à 10 pages</p>
+            <p className="text-slate-400 text-[8px]">jusqu&apos;à 5 pages</p>
           </div>
           <div className="bg-white border border-slate-100 rounded-xl p-2 shadow-sm">
             <div className="flex items-center gap-1.5 mb-1.5">
@@ -321,7 +321,7 @@ function HowItWorks() {
       emoji: '📸',
       icon: Camera,
       title: 'Photographiez le cours',
-      desc: "Votre enfant prend en photo son cours, jusqu'à 10 pages. Brio extrait automatiquement le contenu.",
+      desc: "Votre enfant prend en photo son cours, jusqu'à 5 pages. Brio extrait automatiquement le contenu.",
       gradient: 'from-violet-500 to-indigo-500',
       shadow: 'shadow-indigo-200',
     },
@@ -403,7 +403,7 @@ function Features() {
   const features = [
     {
       icon: Camera, title: 'Photo du cours',
-      desc: "Photographiez jusqu'à 10 pages. Brio extrait et analyse le contenu automatiquement.",
+      desc: "Photographiez jusqu'à 5 pages. Brio extrait et analyse le contenu automatiquement.",
       iconBg: '#EEF2FF', iconColor: '#4F46E5', cardBg: 'white', accent: '#EEF2FF',
     },
     {
