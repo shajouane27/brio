@@ -163,7 +163,17 @@
     "not_100_label": "Em 100 pontos",
     "not_100_sub": "Notação em percentagem",
     "not_lett_label": "Por letras",
-    "not_lett_sub": "A, B, C, D, E"
+    "not_lett_sub": "A, B, C, D, E",
+    "timer_restant": "Tempo restante",
+    "timer_ecoule": "Tempo esgotado",
+    "timer_pause": "Em pausa",
+    "timer_pause_btn": "Pausar",
+    "timer_reprendre_btn": "Retomar",
+    "timer_reinit": "Reiniciar o temporizador",
+    "timer_masquer": "Ocultar o temporizador",
+    "timer_afficher": "Mostrar o temporizador",
+    "timer_fini": "O tempo acabou. Podes rever a tua cópia tranquilamente e depois entregá-la.",
+    "telecharger_controle_pdf": "Descarregar o teste em PDF"
   },
   "Correction": {
     "titre": "Corrigir a minha cópia",

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface ControleTimerProps {
   /** Durée choisie : '30min' | '1h' | '2h' | '3h' */
@@ -24,6 +25,7 @@ function vibrate(pattern: number | number[]) {
 }
 
 export default function ControleTimer({ duree }: ControleTimerProps) {
+  const t = useTranslations('Controle')
   const totalSeconds = dureeToMinutes(duree) * 60
   const [secondsLeft, setSecondsLeft] = useState(totalSeconds)
   const [running, setRunning] = useState(true)
@@ -82,7 +84,7 @@ export default function ControleTimer({ duree }: ControleTimerProps) {
           onClick={() => setHidden(false)}
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 bg-white border border-slate-200 shadow-sm px-3 py-1.5 rounded-full hover:bg-slate-50 transition-colors"
         >
-          ⏱ Afficher le minuteur
+          ⏱ {t('timer_afficher')}
         </button>
       </div>
     )
@@ -105,7 +107,7 @@ export default function ControleTimer({ duree }: ControleTimerProps) {
                 {mm}:{ss}
               </div>
               <div className={`text-xs font-semibold mt-1 ${theme.label}`}>
-                {finished ? 'Temps écoulé' : running ? 'Temps restant' : 'En pause'}
+                {finished ? t('timer_ecoule') : running ? t('timer_restant') : t('timer_pause')}
               </div>
             </div>
           </div>
@@ -115,7 +117,7 @@ export default function ControleTimer({ duree }: ControleTimerProps) {
             {!finished && (
               <button
                 onClick={() => setRunning((r) => !r)}
-                aria-label={running ? 'Mettre en pause' : 'Reprendre'}
+                aria-label={running ? t('timer_pause_btn') : t('timer_reprendre_btn')}
                 className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-white/70 transition-colors"
               >
                 {running ? (
@@ -127,7 +129,7 @@ export default function ControleTimer({ duree }: ControleTimerProps) {
             )}
             <button
               onClick={reset}
-              aria-label="Réinitialiser le minuteur"
+              aria-label={t('timer_reinit')}
               className="w-9 h-9 rounded-full flex items-center justify-center text-slate-500 hover:bg-white/70 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -136,7 +138,7 @@ export default function ControleTimer({ duree }: ControleTimerProps) {
             </button>
             <button
               onClick={() => setHidden(true)}
-              aria-label="Masquer le minuteur"
+              aria-label={t('timer_masquer')}
               className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-white/70 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -150,7 +152,7 @@ export default function ControleTimer({ duree }: ControleTimerProps) {
         {finished && (
           <div className="mt-3 pt-3 border-t border-slate-200 text-sm text-slate-600 flex items-center gap-2 animate-fade-in-up">
             <span className="text-lg">⏳</span>
-            <span>Le temps est écoulé. Tu peux relire ta copie tranquillement, puis la rendre.</span>
+            <span>{t('timer_fini')}</span>
           </div>
         )}
       </div>

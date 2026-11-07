@@ -33,6 +33,7 @@ const GEO_MATIERES = ['Histoire-Géographie', 'Histoire', 'Géographie']
 export default function ResultPanel({ content, type, niveau, exercices, controleOptions, illustrations, onReset, onBack, onRegenerate }: ResultPanelProps) {
   useLanguage()
   const t = useTranslations('Result')
+  const tCommon = useTranslations('Common')
   const [copied, setCopied] = useState(false)
   const [showCorrection, setShowCorrection] = useState(false)
   const [showFiller, setShowFiller] = useState(false)
@@ -123,7 +124,7 @@ export default function ResultPanel({ content, type, niveau, exercices, controle
             </span>
             <div>
               <h2 className="font-bold text-lg leading-tight">{title}</h2>
-              <p className="text-xs text-white/80 mt-0.5">{t('niveau', { defaultValue: 'Niveau' })} {niveau}</p>
+              <p className="text-xs text-white/80 mt-0.5">{tCommon('niveau')} {niveau}</p>
             </div>
           </div>
           {!isExercices && (

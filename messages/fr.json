@@ -163,7 +163,17 @@
     "not_100_label": "Sur 100 points",
     "not_100_sub": "Notation en pourcentage",
     "not_lett_label": "Par lettres",
-    "not_lett_sub": "A, B, C, D, E"
+    "not_lett_sub": "A, B, C, D, E",
+    "timer_restant": "Temps restant",
+    "timer_ecoule": "Temps écoulé",
+    "timer_pause": "En pause",
+    "timer_pause_btn": "Mettre en pause",
+    "timer_reprendre_btn": "Reprendre",
+    "timer_reinit": "Réinitialiser le minuteur",
+    "timer_masquer": "Masquer le minuteur",
+    "timer_afficher": "Afficher le minuteur",
+    "timer_fini": "Le temps est écoulé. Tu peux relire ta copie tranquillement, puis la rendre.",
+    "telecharger_controle_pdf": "Télécharger le contrôle en PDF"
   },
   "Correction": {
     "titre": "Corriger ma copie",

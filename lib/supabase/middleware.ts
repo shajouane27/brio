@@ -93,9 +93,17 @@ export async function updateSession(request: NextRequest) {
     const lang: 'fr' | 'pt' = pays === 'pt-PT' ? 'pt' : 'fr'
     const current = request.cookies.get('brio_lang')?.value
     if (current !== lang) {
+      // Mettre à jour les headers de la REQUÊTE forwarded (lus par i18n/request.ts
+      // via headers()) pour que ce rendu SSR utilise immédiatement la bonne langue.
+      modifiedHeaders.set('x-brio-lang', lang)
+      // Collecter les cookies auth posés par Supabase, recréer la réponse
+      // avec les headers de requête mis à jour, puis les réappliquer.
+      const previousCookies = supabaseResponse.cookies.getAll()
+      supabaseResponse = NextResponse.next({ request: { headers: modifiedHeaders } })
+      previousCookies.forEach(({ name, value, ...opts }) => {
+        supabaseResponse.cookies.set(name, value, opts as Parameters<typeof supabaseResponse.cookies.set>[2])
+      })
       supabaseResponse.cookies.set('brio_lang', lang, LANG_COOKIE)
-      // Propager aussi dans les headers pour ce même rendu
-      supabaseResponse.headers.set('x-brio-lang', lang)
     }
   } else if (detectedLang) {
     // Non connecté, première visite : pose le cookie de réponse

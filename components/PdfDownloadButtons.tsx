@@ -55,7 +55,7 @@ export default function PdfDownloadButtons({ content, meta }: PdfDownloadButtons
         className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-semibold disabled:opacity-50 transition-all"
       >
         {loadingPrint ? <Spinner /> : <span className="text-lg">🖨️</span>}
-        {t('telecharger_pdf')}
+        {t('telecharger_controle_pdf')}
       </button>
     </div>
   )

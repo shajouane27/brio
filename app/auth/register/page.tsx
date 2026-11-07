@@ -86,6 +86,8 @@ export default function RegisterPage() {
         email,
         password,
         options: {
+          // Redirige vers /auth/callback pour que le code PKCE soit bien échangé
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
             prenom,
             profile_type: profileType,
