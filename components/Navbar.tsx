@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
-import { langFromPays } from '@/lib/i18n'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 interface NavbarProps {
@@ -22,7 +21,6 @@ export default function Navbar({ prenom, profileType, pays }: NavbarProps) {
 
   const isParent = profileType === 'parent'
   const initial = (prenom?.charAt(0) ?? '?').toUpperCase()
-  const lang = langFromPays(pays)
   const tNav = useTranslations('Nav')
   const { syncPays } = useLanguage()
 
@@ -91,7 +89,7 @@ export default function Navbar({ prenom, profileType, pays }: NavbarProps) {
               {/* En-tête du menu */}
               <div className="px-4 py-2 border-b border-slate-100">
                 <p className="text-sm font-semibold text-slate-900 truncate">{prenom}</p>
-                <p className="text-xs text-slate-400">{isParent ? 'Espace parent' : 'Compte élève'}</p>
+                <p className="text-xs text-slate-400">{isParent ? tNav('espace_parent') : tNav('compte_eleve')}</p>
               </div>
 
               {/* Liens */}
