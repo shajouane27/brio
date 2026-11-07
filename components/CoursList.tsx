@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useTranslations, useLocale } from 'next-intl'
 
 export interface Cours {
   id: string
@@ -13,8 +14,10 @@ export interface Cours {
   created_at: string
 }
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+function formatDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale === 'pt' ? 'pt-PT' : 'fr-FR', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  })
 }
 
 // Couleur de pastille par matière (palette de marque)
@@ -34,31 +37,39 @@ function matiereColor(matiere: string): string {
 
 export default function CoursList({ cours }: { cours: Cours[] }) {
   const router = useRouter()
+  const locale = useLocale()
+  const t = useTranslations('Cours')
+  const tErrors = useTranslations('Errors')
   const supabase = createClient()
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   async function handleDelete(id: string, e: React.MouseEvent) {
     e.preventDefault()
     e.stopPropagation()
-    if (!confirm('Supprimer ce cours de ta bibliothèque ?')) return
+    if (!confirm(t('supprimer_confirm'))) return
     setDeletingId(id)
+    setDeleteError(null)
     const { error } = await supabase.from('cours').delete().eq('id', id)
     setDeletingId(null)
-    if (!error) router.refresh()
-    else alert('Impossible de supprimer ce cours. Réessaie.')
+    if (!error) {
+      router.refresh()
+    } else {
+      setDeleteError(t('supprimer_erreur'))
+    }
   }
 
   if (!cours.length) {
     return (
       <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center shadow-sm">
         <div className="mx-auto w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center text-3xl mb-3">📚</div>
-        <p className="text-slate-600 text-sm font-medium">Aucun cours sauvegardé pour l&apos;instant.</p>
-        <p className="text-slate-400 text-xs mt-1">Analyse un cours et il apparaîtra automatiquement ici.</p>
+        <p className="text-slate-600 text-sm font-medium">{t('aucun')}</p>
+        <p className="text-slate-400 text-xs mt-1">{t('aucun_desc')}</p>
         <Link
           href="/upload"
           className="inline-flex items-center gap-2 mt-4 bg-brand-600 hover:bg-brand-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl transition-colors"
         >
-          ✨ Analyser un cours
+          ✨ {t('analyser_btn')}
         </Link>
       </div>
     )
@@ -66,6 +77,11 @@ export default function CoursList({ cours }: { cours: Cours[] }) {
 
   return (
     <div className="space-y-3">
+      {deleteError && (
+        <div className="bg-red-50 text-red-600 text-sm px-4 py-3 rounded-xl border border-red-100">
+          {deleteError}
+        </div>
+      )}
       {cours.map((c) => (
         <div
           key={c.id}
@@ -80,12 +96,12 @@ export default function CoursList({ cours }: { cours: Cours[] }) {
             {/* Infos — clic = réutiliser le cours (étape choix) */}
             <Link href={`/upload?coursId=${c.id}`} className="flex-1 min-w-0 group">
               <div className="font-bold text-slate-900 truncate group-hover:text-brand-700 transition-colors">
-                {c.titre || 'Cours sans titre'}
+                {c.titre || t('cours_sans_titre')}
               </div>
               <div className="text-xs text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-2">
                 <span>{c.matiere}</span>
                 {c.niveau && <span>· {c.niveau}</span>}
-                <span>· {formatDate(c.created_at)}</span>
+                <span>· {formatDate(c.created_at, locale)}</span>
               </div>
             </Link>
 
@@ -93,7 +109,7 @@ export default function CoursList({ cours }: { cours: Cours[] }) {
             <button
               onClick={(e) => handleDelete(c.id, e)}
               disabled={deletingId === c.id}
-              aria-label="Supprimer ce cours"
+              aria-label={t('supprimer_confirm')}
               className="w-9 h-9 rounded-full flex items-center justify-center text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors disabled:opacity-40 shrink-0"
             >
               {deletingId === c.id ? (
@@ -115,13 +131,13 @@ export default function CoursList({ cours }: { cours: Cours[] }) {
               href={`/upload?coursId=${c.id}&action=controle`}
               className="flex items-center justify-center gap-1.5 text-sm font-semibold text-brand-700 bg-brand-50 hover:bg-brand-100 py-2.5 rounded-xl transition-colors"
             >
-              🔄 Nouveau contrôle
+              🔄 {t('nouveau_controle')}
             </Link>
             <Link
               href={`/upload?coursId=${c.id}&action=exercices`}
               className="flex items-center justify-center gap-1.5 text-sm font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 py-2.5 rounded-xl transition-colors"
             >
-              ✏️ Nouveaux exercices
+              ✏️ {t('nouveaux_exercices')}
             </Link>
           </div>
         </div>

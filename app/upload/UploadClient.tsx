@@ -620,7 +620,7 @@ export default function UploadClient({ niveau, pays, initialCourseText, initialC
                 className="w-full mt-3 flex items-center justify-center gap-2.5 bg-white hover:bg-accent-50 border-2 border-accent-300 hover:border-accent-400 disabled:opacity-50 text-accent-700 font-bold py-4 rounded-2xl transition-all"
               >
                 <span className="text-xl">🎤</span> {t('mode_dictee')}
-                <span className="text-xs font-medium text-accent-500">{t('mode_dictee_desc')}</span>
+                <span className="text-xs font-medium text-accent-500">{t('dictee_desc')}</span>
               </button>
             )}
           </div>

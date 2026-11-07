@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { COUNTRY_OPTIONS } from '@/lib/countries'
 import CountrySelector from '@/components/CountrySelector'
 
@@ -15,6 +16,9 @@ export default function EnfantPaysEditor({
   childPrenom,
   currentPays,
 }: EnfantPaysEditorProps) {
+  const t = useTranslations('Settings')
+  const tCommon = useTranslations('Common')
+  const tErrors = useTranslations('Errors')
   const [selected, setSelected] = useState(currentPays)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -37,7 +41,7 @@ export default function EnfantPaysEditor({
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      setError(e instanceof Error ? e.message : tErrors('unknown'))
     } finally {
       setSaving(false)
     }
@@ -45,11 +49,11 @@ export default function EnfantPaysEditor({
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-      <h2 className="font-semibold text-slate-900">🌍 Pays de {childPrenom}</h2>
+      <h2 className="font-semibold text-slate-900">{t('enfant_pays_titre', { prenom: childPrenom })}</h2>
 
       <div className="space-y-3">
         <label className="block text-sm text-slate-500">
-          Modifier le pays (détermine la langue et le format des contrôles)
+          {t('enfant_pays_desc')}
         </label>
 
         <CountrySelector
@@ -62,7 +66,7 @@ export default function EnfantPaysEditor({
 
         {success && (
           <p className="text-sm text-emerald-600 flex items-center gap-1.5">
-            <span>✓</span> Pays de {childPrenom} mis à jour.
+            <span>✓</span> {t('enfant_pays_ok', { prenom: childPrenom })}
           </p>
         )}
 
@@ -71,7 +75,7 @@ export default function EnfantPaysEditor({
           disabled={!isDirty || saving}
           className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors"
         >
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
+          {saving ? tCommon('enregistrer') + '…' : tCommon('enregistrer')}
         </button>
       </div>
     </div>

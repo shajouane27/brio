@@ -45,6 +45,7 @@ interface CorrectionPanelProps {
 export default function CorrectionPanel({ controleContent, notation, niveau, duree, onClose, onSaved, onRegenerate }: CorrectionPanelProps) {
   const t = useTranslations('Correction')
   const tCommon = useTranslations('Common')
+  const tErrors = useTranslations('Errors')
   const [preview, setPreview] = useState<string | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [correcting, setCorrecting] = useState(false)
@@ -123,7 +124,7 @@ export default function CorrectionPanel({ controleContent, notation, niveau, dur
         if (r.ok) { setSaved(true); onSaved?.() }
       }).catch(() => {})
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      setError(e instanceof Error ? e.message : tErrors('unknown'))
     } finally {
       setCorrecting(false)
     }

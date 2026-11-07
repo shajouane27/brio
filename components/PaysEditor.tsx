@@ -16,6 +16,7 @@ export default function PaysEditor({ currentPays }: PaysEditorProps) {
   const { setPays } = useLanguage()
   const t = useTranslations('Settings')
   const tCommon = useTranslations('Common')
+  const tErrors = useTranslations('Errors')
   const [selected, setSelected] = useState(currentPays)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -42,7 +43,7 @@ export default function PaysEditor({ currentPays }: PaysEditorProps) {
       router.refresh()
       setTimeout(() => setSuccess(false), 4000)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      setError(e instanceof Error ? e.message : tErrors('unknown'))
     } finally {
       setSaving(false)
     }

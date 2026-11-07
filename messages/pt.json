@@ -231,7 +231,13 @@
     "niveau_ok": "✓ Nível atualizado — considerado na próxima geração.",
     "pays_titre": "🌍 O meu país",
     "pays_desc": "País atual (determina o idioma da interface e o formato dos testes)",
-    "pays_ok": "✓ País atualizado — o idioma da interface foi alterado."
+    "pays_ok": "✓ País atualizado — o idioma da interface foi alterado.",
+    "enfant_niveau_titre": "🎓 Nível escolar de {prenom}",
+    "enfant_niveau_desc": "Modificar o nível (considerado na próxima geração de exercícios)",
+    "enfant_niveau_ok": "✓ Nível de {prenom} atualizado.",
+    "enfant_pays_titre": "🌍 País de {prenom}",
+    "enfant_pays_desc": "Modificar o país (determina o idioma e o formato dos testes)",
+    "enfant_pays_ok": "✓ País de {prenom} atualizado."
   },
   "Errors": {
     "server_timeout": "Resposta do servidor inválida ({status}) — o servidor demorou demasiado tempo a responder.",
@@ -246,7 +252,13 @@
     "titre": "As minhas aulas",
     "sous_titre": "As tuas aulas analisadas ficam guardadas aqui — reutiliza-as sem voltar a tirar fotografias.",
     "aucun": "Nenhuma aula guardada por enquanto.",
+    "aucun_desc": "Analisa uma aula e ela aparecerá automaticamente aqui.",
     "analyser_btn": "Analisar uma aula",
-    "reutiliser": "Reutilizar →"
+    "reutiliser": "Reutilizar →",
+    "cours_sans_titre": "Aula sem título",
+    "nouveau_controle": "Novo teste",
+    "nouveaux_exercices": "Novos exercícios",
+    "supprimer_confirm": "Remover esta aula da tua biblioteca?",
+    "supprimer_erreur": "Impossível remover esta aula. Tenta novamente."
   }
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { NIVEAUX } from '@/lib/niveaux'
 
 interface EnfantNiveauEditorProps {
@@ -14,6 +15,9 @@ export default function EnfantNiveauEditor({
   childPrenom,
   currentNiveau,
 }: EnfantNiveauEditorProps) {
+  const t = useTranslations('Settings')
+  const tCommon = useTranslations('Common')
+  const tErrors = useTranslations('Errors')
   const [selected, setSelected] = useState(currentNiveau)
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -36,7 +40,7 @@ export default function EnfantNiveauEditor({
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      setError(e instanceof Error ? e.message : tErrors('unknown'))
     } finally {
       setSaving(false)
     }
@@ -44,11 +48,11 @@ export default function EnfantNiveauEditor({
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-      <h2 className="font-semibold text-slate-900">🎓 Niveau scolaire de {childPrenom}</h2>
+      <h2 className="font-semibold text-slate-900">{t('enfant_niveau_titre', { prenom: childPrenom })}</h2>
 
       <div className="space-y-3">
         <label className="block text-sm text-slate-500">
-          Modifier le niveau (pris en compte à la prochaine génération d&apos;exercices)
+          {t('enfant_niveau_desc')}
         </label>
         <select
           value={selected}
@@ -66,7 +70,7 @@ export default function EnfantNiveauEditor({
 
         {success && (
           <p className="text-sm text-emerald-600 flex items-center gap-1.5">
-            <span>✓</span> Niveau de {childPrenom} mis à jour.
+            <span>✓</span> {t('enfant_niveau_ok', { prenom: childPrenom })}
           </p>
         )}
 
@@ -75,7 +79,7 @@ export default function EnfantNiveauEditor({
           disabled={!isDirty || saving}
           className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold text-sm transition-colors"
         >
-          {saving ? 'Enregistrement…' : 'Enregistrer'}
+          {saving ? tCommon('enregistrer') + '…' : tCommon('enregistrer')}
         </button>
       </div>
     </div>

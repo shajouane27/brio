@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 interface PdfDownloadButtonsProps {
   content: string
@@ -12,10 +13,14 @@ interface PdfDownloadButtonsProps {
 }
 
 export default function PdfDownloadButtons({ content, meta }: PdfDownloadButtonsProps) {
+  const t = useTranslations('Result')
+  const tErrors = useTranslations('Errors')
   const [loadingPrint, setLoadingPrint] = useState(false)
+  const [error, setError] = useState('')
 
   async function download() {
     setLoadingPrint(true)
+    setError('')
     try {
       const res = await fetch('/api/pdf', {
         method: 'POST',
@@ -23,7 +28,7 @@ export default function PdfDownloadButtons({ content, meta }: PdfDownloadButtons
         body: JSON.stringify({ content, fillable: false, meta }),
       })
 
-      if (!res.ok) throw new Error('Erreur PDF')
+      if (!res.ok) throw new Error('pdf')
 
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
@@ -32,23 +37,27 @@ export default function PdfDownloadButtons({ content, meta }: PdfDownloadButtons
       a.download = 'brio-controle.pdf'
       a.click()
       URL.revokeObjectURL(url)
-    } catch (e) {
-      console.error(e)
-      alert('Impossible de générer le PDF. Réessaie.')
+    } catch {
+      setError(t('erreur_pdf'))
     } finally {
       setLoadingPrint(false)
     }
   }
 
   return (
-    <button
-      onClick={download}
-      disabled={loadingPrint}
-      className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-semibold disabled:opacity-50 transition-all"
-    >
-      {loadingPrint ? <Spinner /> : <span className="text-lg">🖨️</span>}
-      Télécharger le contrôle en PDF
-    </button>
+    <div className="space-y-2">
+      {error && (
+        <p className="text-sm text-red-600">{error}</p>
+      )}
+      <button
+        onClick={download}
+        disabled={loadingPrint}
+        className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-semibold disabled:opacity-50 transition-all"
+      >
+        {loadingPrint ? <Spinner /> : <span className="text-lg">🖨️</span>}
+        {t('telecharger_pdf')}
+      </button>
+    </div>
   )
 }
 

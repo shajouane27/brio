@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import CorrectionResultView, { type CorrectionResult } from './CorrectionResultView'
 import RegenButtons, { type RegenFn } from './RegenButtons'
 import ControleTimer from './ControleTimer'
@@ -143,6 +144,7 @@ function Spinner() {
 }
 
 export default function ControleFiller({ controleContent, notation, niveau, duree, onClose, onSaved, onRegenerate }: Props) {
+  const tErrors = useTranslations('Errors')
   const questions = useMemo(() => parseQuestions(controleContent), [controleContent])
   const [index, setIndex] = useState(0)
   const [texts, setTexts] = useState<Record<number, string>>({})
@@ -187,7 +189,7 @@ export default function ControleFiller({ controleContent, notation, niveau, dure
         body: JSON.stringify({ controleContent, correction: data.correction, notation, duree }),
       }).then((r) => { if (r.ok) { setSaved(true); onSaved?.() } }).catch(() => {})
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Erreur inconnue')
+      setError(e instanceof Error ? e.message : tErrors('unknown'))
       setPhase('fill')
     }
   }

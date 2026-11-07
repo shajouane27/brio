@@ -231,7 +231,13 @@
     "niveau_ok": "✓ Niveau mis à jour — pris en compte dès la prochaine génération.",
     "pays_titre": "🌍 Mon pays",
     "pays_desc": "Pays actuel (détermine la langue de l'interface et le format des contrôles)",
-    "pays_ok": "✓ Pays mis à jour — la langue de l'interface a changé."
+    "pays_ok": "✓ Pays mis à jour — la langue de l'interface a changé.",
+    "enfant_niveau_titre": "🎓 Niveau scolaire de {prenom}",
+    "enfant_niveau_desc": "Modifier le niveau (pris en compte à la prochaine génération d'exercices)",
+    "enfant_niveau_ok": "✓ Niveau de {prenom} mis à jour.",
+    "enfant_pays_titre": "🌍 Pays de {prenom}",
+    "enfant_pays_desc": "Modifier le pays (détermine la langue et le format des contrôles)",
+    "enfant_pays_ok": "✓ Pays de {prenom} mis à jour."
   },
   "Errors": {
     "server_timeout": "Réponse serveur invalide ({status}) — le serveur a mis trop de temps à répondre.",
@@ -246,7 +252,13 @@
     "titre": "Mes cours",
     "sous_titre": "Tes cours analysés sont sauvegardés ici — réutilise-les sans reprendre de photo.",
     "aucun": "Aucun cours sauvegardé pour l'instant.",
+    "aucun_desc": "Analyse un cours et il apparaîtra automatiquement ici.",
     "analyser_btn": "Analyser un cours",
-    "reutiliser": "Réutiliser →"
+    "reutiliser": "Réutiliser →",
+    "cours_sans_titre": "Cours sans titre",
+    "nouveau_controle": "Nouveau contrôle",
+    "nouveaux_exercices": "Nouveaux exercices",
+    "supprimer_confirm": "Supprimer ce cours de ta bibliothèque ?",
+    "supprimer_erreur": "Impossible de supprimer ce cours. Réessaie."
   }
 }
