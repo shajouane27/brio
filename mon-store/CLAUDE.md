@@ -1,1 +1,0 @@
-/Users/bigmac/Documents/brio/mon-store/AGENTS.md
