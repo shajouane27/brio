@@ -79,7 +79,7 @@ export default function NiveauEditor({ currentNiveau, pays = 'fr-FR' }: NiveauEd
 
         {success && (
           <p className="text-sm text-emerald-600 flex items-center gap-1.5">
-            <span>✓</span> Niveau mis à jour — pris en compte dès la prochaine génération.
+            <span>✓</span> {t('niveau_ok')}
           </p>
         )}
 

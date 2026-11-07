@@ -83,8 +83,8 @@ export default async function DashboardPage() {
             <div className="absolute -right-8 -top-10 w-44 h-44 rounded-full bg-white/10 blur-2xl" />
             <div className="absolute right-16 bottom-0 w-28 h-28 rounded-full bg-accent-400/20 blur-2xl" />
             <div className="relative">
-              <h1 className="text-3xl font-extrabold tracking-tight">Bonjour {prenom} 👋</h1>
-              <p className="text-brand-100 mt-1.5">Espace parent — suivez la progression de vos enfants</p>
+              <h1 className="text-3xl font-extrabold tracking-tight">{t('bonjour')} {prenom} 👋</h1>
+              <p className="text-brand-100 mt-1.5">{t('parent_desc')}</p>
             </div>
           </section>
 
@@ -219,7 +219,7 @@ export default async function DashboardPage() {
             </h2>
             {flashStreak > 0 && (
               <span className="inline-flex items-center gap-1.5 text-sm font-bold text-accent-700 bg-accent-50 border border-accent-100 px-3 py-1 rounded-full">
-                🔥 {flashStreak} jour{flashStreak > 1 ? 's' : ''}
+                {flashStreak > 1 ? t('streak_plural', { count: flashStreak }) : t('streak', { count: flashStreak })}
               </span>
             )}
           </div>
